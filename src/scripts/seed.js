@@ -1,13 +1,13 @@
 import mongoose from "mongoose";
 import "dotenv/config";
-import { User } from "../modules/users/user.model.js";
-import { Calendar } from "../modules/calendars/calendar.model.js";
-import { CalendarMember } from "../modules/calendars/calendarMember.model.js";
+import { User } from "../models/User.js";
+import { Calendar } from "../models/Calendar.js";
+import { CalendarMember } from "../models/CalendarMember.js";
 import {
     Event,
     ArrangementEvent,
     TaskEvent,
-} from "../modules/events/event.model.js";
+} from "../models/Event.js";
 
 const MONGO_URI = process.env.MONGO_URI;
 
