@@ -14,7 +14,10 @@ const userSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-userSchema.index({ 'secret.email': 1 }, { unique: true });
+userSchema.index(
+    { "secret.email": 1 },
+    { unique: true, collation: { locale: 'en', strength: 2 } }
+);
 
 userSchema.virtual('id').get(function () {
     return this._id.toHexString();
