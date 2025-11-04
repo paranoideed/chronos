@@ -3,6 +3,8 @@ import { User } from "../models/User.js";
 import { Calendar } from "../models/Calendar.js";
 import { CalendarMember } from "../models/CalendarMember.js";
 import { generateToken } from "../utils/jwt.js";
+import { TokenService } from "./tokenService.js";
+import MailService from "./mailService.js";
 
 const deriveNameFromEmail = (email) => {
     const local = email.split("@")[0] || "";
@@ -45,6 +47,14 @@ export const registerUser = async (email, password) => {
         status: "accepted",
     });
 
+    const ttl = Number(process.env.EMAIL_VERIFY_TTL_MIN || 60);
+    const rawToken = await TokenService.mintSingleUseToken({
+        userId: user.id,
+        type: "email_verify",
+        ttlMinutes: ttl,
+    });
+    await MailService.sendEmailVerification(user.secret.email, rawToken);
+
     return {
         message: "User registered successfully",
         user: user.toJSON(),
@@ -65,6 +75,11 @@ export const loginUser = async ({ email, password }) => {
     if (!isMatch) {
         throw new Error("INVALID_CREDENTIALS");
     }
+
+    // --- uncomment for emailVefified checking ---
+    // if (!user.secret.emailVerified) {
+    //     throw new Error("EMAIL_NOT_VERIFIED");
+    // }
 
     const token = generateToken(user.id);
     return { token, user: user.toJSON() };
