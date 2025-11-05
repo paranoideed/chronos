@@ -8,7 +8,12 @@ export function buildApp() {
     const app = express();
 
     app.use(helmet());
-    app.use(cors());
+    app.use(cors({
+        origin: process.env.FRONTEND_BASE_URL,
+        credentials: true,
+        methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE'],
+        allowedHeaders: ['Content-Type', 'Authorization']
+    }));
     app.use(express.json());
     app.use(morgan('dev'));
 
