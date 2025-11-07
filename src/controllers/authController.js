@@ -8,12 +8,11 @@ export const register = async (req, res) => {
             body: req.body,
         });
 
-        const { token, user } = await authService.registerUser(
+        const { user, message } = await authService.registerUser(
             validatedData.email,
             validatedData.password
         );
-
-        res.status(201).json({ token, user });
+        res.status(201).json({ user, message });
     } catch (error) {
         if (error instanceof ZodError) {
             return res.status(400).json({
