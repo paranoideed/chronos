@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
 import authRoutes from './routes/authRoutes.js';
+import calendarRoutes from './routes/calendarRoutes.js';
 
 export function buildApp() {
     const app = express();
@@ -24,6 +25,7 @@ export function buildApp() {
     });
 
     app.use('/api/auth', authRoutes);
+    app.use('/api/calendars', calendarRoutes);
 
     // DEV: uncomment for email verifying
     // app.get('/verify', (req, res) => {
