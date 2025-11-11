@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
 
-const CALENDAR_TYPES = ['primary', 'holidays', 'ordinary'];
+const calenderTypes = ['primary', 'holidays', 'ordinary'];
 
-const calendarSchema = new mongoose.Schema(
+export const calendarModel = new mongoose.Schema(
     {
-        type: { type: String, enum: CALENDAR_TYPES, required: true },
+        type: { type: String, enum: calenderTypes, required: true },
         name: { type: String, required: true, trim: true },
         description: { type: String },
         color: { type: String },
@@ -12,11 +12,11 @@ const calendarSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-calendarSchema.virtual('id').get(function () {
+calendarModel.virtual('id').get(function () {
     return this._id.toHexString();
 });
 
-calendarSchema.set('toJSON', {
+calendarModel.set('toJSON', {
     virtuals: true,
     versionKey: false,
     transform: function (_, ret) {
@@ -24,4 +24,4 @@ calendarSchema.set('toJSON', {
     }
 });
 
-export const Calendar = mongoose.model('Calendar', calendarSchema);
+// export const Calendars = mongoose.model('Calendars', calendarSchema);

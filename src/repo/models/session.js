@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
 
-const userTokenSchema = new mongoose.Schema(
+export const sessionModel = new mongoose.Schema(
     {
         tokenHash: { type: String, required: true, index: true, unique: true },
-        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, index: true },
+        userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Users', required: true, index: true },
         type: { type: String, enum: ['email_verify', 'password_reset'], required: true, index: true },
         meta: { type: mongoose.Schema.Types.Mixed },
         used: { type: Boolean, default: false, index: true },
@@ -12,6 +12,6 @@ const userTokenSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-userTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+sessionModel.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
 
-export const UserToken = mongoose.model('UserToken', userTokenSchema);
+// export const UserSessions = mongoose.model('UserSessions', userSessionModel);

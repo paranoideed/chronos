@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
-const userSchema = new mongoose.Schema(
+
+export const userModel = new mongoose.Schema(
     {
         secret: {
             email: { type: String, required: true, lowercase: true, trim: true },
@@ -14,16 +15,16 @@ const userSchema = new mongoose.Schema(
     { timestamps: true }
 );
 
-userSchema.index(
+userModel.index(
     { "secret.email": 1 },
     { unique: true, collation: { locale: 'en', strength: 2 } }
 );
 
-userSchema.virtual('id').get(function () {
+userModel.virtual('id').get(function () {
     return this._id.toHexString();
 });
 
-userSchema.set('toJSON', {
+userModel.set('toJSON', {
     virtuals: true,
     versionKey: false,
     transform: function (_, ret) {
@@ -32,4 +33,4 @@ userSchema.set('toJSON', {
     }
 });
 
-export const User = mongoose.model('User', userSchema);
+// export const Users = mongoose.model('Users', userModel);
