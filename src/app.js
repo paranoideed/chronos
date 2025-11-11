@@ -2,9 +2,9 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import authRoutes from './routes/authRoutes.js';
-import calendarRoutes from './routes/calendarRoutes.js';
-import eventRoutes from './routes/eventRoutes.js';
+import authRoutes from './rest/routes/authRoutes.js';
+import calendarRoutes from './rest/routes/calendarRoutes.js';
+import eventRoutes from './rest/routes/eventRoutes.js';
 
 export function buildApp() {
     const app = express();

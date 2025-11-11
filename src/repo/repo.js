@@ -1,13 +1,13 @@
 import mongoose, {Model} from "mongoose";
 import {userModel} from "./models/user.js";
-import {sessionModel} from "./models/session.js";
 import {calendarMemberModel} from "./models/calendar_member.js";
 import {notificationModel} from "./models/notification.js";
 import {calendarModel} from "./models/calendar.js";
 import {eventAttendeeModel} from "./models/event_attendee.js";
-import {eventModel} from "./models/event.js";
+import {eventModel, Events} from "./models/event.js";
+import {ApprovalTokenModel} from "./models/approval_token.js";
 
-class repo {
+export class Repo {
     private uri: string
 
     constructor(uri: string) {
@@ -28,8 +28,8 @@ class repo {
         return mongoose.model('Users', userModel);
     }
 
-    public sessions(): Model {
-        return mongoose.model('UserSessions', sessionModel);
+    public approvalTokens(): Model {
+        return mongoose.model('ApprovalTokens', ApprovalTokenModel);
     }
 
     public calendars(): Model {
@@ -41,7 +41,7 @@ class repo {
     }
 
     public events(): Model {
-        return mongoose.model('Events', eventModel);
+        return Events
     }
 
     public eventAttendees(eventType: string): Model {
@@ -53,4 +53,5 @@ class repo {
     }
 }
 
-const Repo = new repo(process.env.MONGO_URI);
+const repo = new Repo(process.env.MONGO_URI);
+export default repo;

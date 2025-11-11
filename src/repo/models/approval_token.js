@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-export const sessionModel = new mongoose.Schema(
+export const ApprovalTokenModel = new mongoose.Schema(
     {
         tokenHash: { type: String, required: true, index: true, unique: true },
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Users', required: true, index: true },
@@ -12,6 +12,4 @@ export const sessionModel = new mongoose.Schema(
     { timestamps: true }
 );
 
-sessionModel.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
-
-// export const UserSessions = mongoose.model('UserSessions', userSessionModel);
+ApprovalTokenModel.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });

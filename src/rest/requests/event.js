@@ -122,3 +122,9 @@ export const listEventsSchema = z.object({
         limit: z.coerce.number().int().min(1).max(100).default(20).optional(),
     }),
 });
+
+export type CreateEventRequest = z.infer<typeof createEventSchema>;
+export type UpdateEventRequest = z.infer<typeof updateEventSchema>;
+export type GetOneEventRequest = z.infer<typeof getOneSchema>;
+export type RemoveEventRequest = z.infer<typeof removeSchema>;
+export type ListEventsRequest = z.infer<typeof listEventsSchema>;

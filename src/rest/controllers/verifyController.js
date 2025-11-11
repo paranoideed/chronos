@@ -1,5 +1,5 @@
-import { TokenService } from "../services/tokenService.js";
-import { User } from "../models/User.js";
+import { TokenService } from "../../domain/tokenService.js";
+import { Users } from "../repo/models/UserModel.js";
 
 export const verifyEmail = async (req, res) => {
     try {
@@ -7,8 +7,8 @@ export const verifyEmail = async (req, res) => {
         if (!raw) return res.status(400).json({ message: "Token is required" });
 
         const rec = await TokenService.consume(raw, "email_verify");
-        const user = await User.findById(rec.userId);
-        if (!user) return res.status(404).json({ message: "User not found" });
+        const user = await Users.findById(rec.userId);
+        if (!user) return res.status(404).json({ message: "Users not found" });
 
         if (!user.secret) user.secret = {};
         user.secret.emailVerified = true;
@@ -37,12 +37,12 @@ export const resendVerification = async (req, res) => {
         const email = req.body?.email;
 
         const user = userId
-            ? await User.findById(userId)
-            : await User.findOne({
+            ? await Users.findById(userId)
+            : await Users.findOne({
                   "secret.email": String(email).trim().toLowerCase(),
               });
 
-        if (!user) return res.status(404).json({ message: "User not found" });
+        if (!user) return res.status(404).json({ message: "Users not found" });
         if (user.secret?.emailVerified) {
             return res.status(200).json({ message: "Email already verified" });
         }
@@ -76,7 +76,7 @@ export const resendVerification = async (req, res) => {
         });
 
         const { default: MailService } = await import(
-            "../services/mailService.js"
+            "../../domain/mailService.js"
         );
         await MailService.sendEmailVerification(user.secret.email, raw);
 

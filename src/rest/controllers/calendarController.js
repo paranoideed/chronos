@@ -2,8 +2,8 @@ import { ZodError } from "zod";
 import {
     createCalendarSchema,
     updateCalendarSchema,
-} from "../dtos/calendarDto.js";
-import * as calendarService from "../services/calendarService.js";
+} from "../requests/calendarDto.js";
+import * as calendarService from "../../domain/calendarService.js";
 
 export const create = async (req, res) => {
     try {

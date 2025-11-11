@@ -18,3 +18,6 @@ export const updateCalendarSchema = z.object({
         color: z.string().trim().max(32).optional(),
     }),
 });
+
+export const calendarIdParamRequest = z.infer<typeof createCalendarSchema>;
+export type updateCalendarRequest = z.infer<typeof createCalendarSchema>;

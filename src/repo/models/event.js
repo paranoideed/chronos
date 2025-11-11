@@ -32,49 +32,48 @@ eventModel.set('toJSON', {
 });
 
 
-//Зачем это нужно? Я крч не понял, но пусть будет закомментировано
-//еси для теста то нужно пренести в папку для тестов
-//export const Events = mongoose.model('Events', baseEventSchema);
-// const arrangementSchema = new mongoose.Schema({
-//     startAt: {
-//         type: Date,
-//         required: function () {
-//             return this.allDay !== true;
-//         },
-//     },
-//     endAt: {
-//         type: Date,
-//         required: function () {
-//             return this.allDay !== true;
-//         },
-//     },
-//     allDay: { type: Boolean, default: false },
-// });
-//
-// arrangementSchema.pre('save', function (next) {
-//     if (this.allDay) {
-//         this.startAt = undefined;
-//         this.endAt = undefined;
-//     }
-//     next();
-// });
-//
-// export const ArrangementEvent = Events.discriminator(
-//     'arrangement',
-//     arrangementSchema
-// );
-//
-// export const ReminderEvent = Events.discriminator(
-//     'reminder',
-//     new mongoose.Schema({
-//         remindAt: { type: Date, required: true },
-//     })
-// );
-//
-// export const TaskEvent = Events.discriminator(
-//     'task',
-//     new mongoose.Schema({
-//         dueAt: { type: Date, required: true },
-//         isDone: { type: Boolean, default: false },
-//     })
-// );
+export const Events = mongoose.model('Events', eventModel);
+
+const arrangementSchema = new mongoose.Schema({
+    startAt: {
+        type: Date,
+        required: function () {
+            return this.allDay !== true;
+        },
+    },
+    endAt: {
+        type: Date,
+        required: function () {
+            return this.allDay !== true;
+        },
+    },
+    allDay: { type: Boolean, default: false },
+});
+
+arrangementSchema.pre('save', function (next) {
+    if (this.allDay) {
+        this.startAt = undefined;
+        this.endAt = undefined;
+    }
+    next();
+});
+
+export const ArrangementEvent = Events.discriminator(
+    'arrangement',
+    arrangementSchema
+);
+
+export const ReminderEvent = Events.discriminator(
+    'reminder',
+    new mongoose.Schema({
+        remindAt: { type: Date, required: true },
+    })
+);
+
+export const TaskEvent = Events.discriminator(
+    'task',
+    new mongoose.Schema({
+        dueAt: { type: Date, required: true },
+        isDone: { type: Boolean, default: false },
+    })
+);

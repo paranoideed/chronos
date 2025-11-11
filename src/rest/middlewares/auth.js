@@ -1,5 +1,4 @@
 import jwt from "jsonwebtoken";
-import { User } from "../models/User.js";
 
 export const authRequired = async (req, res, next) => {
     try {
@@ -17,11 +16,11 @@ export const authRequired = async (req, res, next) => {
             return res.status(401).json({ error: "Token missing" });
         }
 
-        const payload = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(payload.id).lean();
-        if (!user) return res.status(401).json({ message: "Unauthorized" });
+        // const user = await Users.findById(payload.id).lean(); <-- Never do this is very big load for db
+        // if (!user) return res.status(401).json({ message: "Unauthorized" });
 
-        req.user = { id: String(user._id) };
+        req.user = jwt.verify(token, process.env.JWT_SECRET); // Attach user info to request object
+
         next();
     } catch (e) {
         return res.status(401).json({ message: "Unauthorized" });
