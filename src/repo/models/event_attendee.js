@@ -18,6 +18,11 @@ eventAttendeeModel.virtual('id').get(function () {
 eventAttendeeModel.set('toJSON', {
     virtuals: true,
     versionKey: false,
+
+    /**
+     * @param {any} _
+     * @param {any} ret
+     */
     transform: function (_, ret) {
         delete ret._id;
     }

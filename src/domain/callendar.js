@@ -1,19 +1,21 @@
 import mongoose from "mongoose";
-import type { Repo } from "../repo/Repo.js";
-import {CalendarNotFoundError, ForbiddenError, PrimaryCalendarExistsError} from "./errors/error.js";
+import {
+    CalendarNotFoundError,
+    ForbiddenError,
+    PrimaryCalendarExistsError,
+} from "./errors/error.js";
 import repo from "../repo/repo.js";
 
-const asObjId = (id: string): mongoose.Types.ObjectId =>
-    new mongoose.Types.ObjectId(id);
+const asObjId = (id) => new mongoose.Types.ObjectId(id);
 
 class CalendarsService {
-    private repo: Repo;
+    repo;
 
-    constructor(repo: Repo) {
+    constructor(repo) {
         this.repo = repo;
     }
 
-    private async ensureMember(calendarId: string, userId: string) {
+    async ensureMember(calendarId, userId) {
         const member = await this.repo
             .calendarMembers()
             .findOne({
@@ -30,7 +32,7 @@ class CalendarsService {
         return member;
     }
 
-    private ensureRole(member: any, roles: string[]) {
+    ensureRole(member, roles) {
         if (!roles.includes(member.role)) {
             throw new ForbiddenError(
                 "You don't have enough permissions to perform this action"
@@ -38,20 +40,15 @@ class CalendarsService {
         }
     }
 
-    public async createCalendar(
-        userId: string,
+    async createCalendar(
+        userId,
         {
             type,
             name,
             description,
             color,
-        }: {
-            type: string;
-            name: string;
-            description?: string;
-            color?: string;
         }
-    ): Promise<any> {
+    ) {
         if (type === "primary") {
             const existingPrimary = await this.repo
                 .calendarMembers()
@@ -85,7 +82,7 @@ class CalendarsService {
         return cal.toJSON();
     }
 
-    public async listMyCalendars(userId: string): Promise<any[]> {
+    async listMyCalendars(userId) {
         const memberships = await this.repo
             .calendarMembers()
             .find({
@@ -95,7 +92,7 @@ class CalendarsService {
             .populate("calendarId")
             .lean();
 
-        return memberships.map((m: any) => ({
+        return memberships.map((m) => ({
             role: m.role,
             joinedAt: m.createdAt,
             calendar: m.calendarId
@@ -112,10 +109,10 @@ class CalendarsService {
         }));
     }
 
-    public async getCalendar(
-        userId: string,
-        calendarId: string
-    ): Promise<any> {
+    async getCalendar(
+        userId,
+        calendarId
+    ) {
         await this.ensureMember(calendarId, userId);
 
         const cal = await this.repo.calendars().findById(calendarId).lean();
@@ -126,11 +123,11 @@ class CalendarsService {
         return { ...cal, id: cal._id };
     }
 
-    public async updateCalendar(
-        userId: string,
-        calendarId: string,
-        patch: Record<string, any>
-    ): Promise<any> {
+    async updateCalendar(
+        userId,
+        calendarId,
+        patch
+    ) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor"]);
 
@@ -146,10 +143,10 @@ class CalendarsService {
         return { ...updated, id: updated._id };
     }
 
-    public async deleteCalendar(
-        userId: string,
-        calendarId: string
-    ): Promise<boolean> {
+    async deleteCalendar(
+        userId,
+        calendarId
+    ) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner"]);
 

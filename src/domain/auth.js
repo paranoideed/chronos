@@ -2,7 +2,6 @@ import bcrypt from "bcryptjs";
 import { generateToken } from "../pkg/jwt.js";
 import { TokenService } from "./tokenService.js";
 import MailService from "./mailService.js";
-import type { Repo } from "../repo/Repo.js";
 import { InvalidCredentialsError, UserExistsError } from "./errors/error.js";
 import repo from "../repo/repo.js";
 
@@ -18,24 +17,14 @@ const deriveNameFromEmail = (email) => {
     );
 };
 
-type RegisterResult = {
-    message: string;
-    user: any;
-};
+class AuthService {
+    repo;
 
-type LoginResult = {
-    token: string;
-    user: any;
-};
-
-export class AuthService {
-    private repo: Repo;
-
-    constructor(repo: Repo) {
+    constructor(repo) {
         this.repo = repo;
     }
 
-    public async registerUser({ email, password }): Promise<RegisterResult> {
+    async registerUser( email, password ) {
         const normEmail = String(email).trim().toLowerCase();
 
         const existingUser = await this.repo.users().findOne({
@@ -46,7 +35,7 @@ export class AuthService {
             throw new UserExistsError();
         }
 
-        const passwordHash: string = await bcrypt.hash(password, 12);
+        const passwordHash = await bcrypt.hash(password, 12);
 
         const user = await this.repo.users().create({
             secret: { email: normEmail, passwordHash, emailVerified: false },
@@ -65,7 +54,7 @@ export class AuthService {
             status: "accepted",
         });
 
-        const ttl: number = Number(process.env.EMAIL_VERIFY_TTL_MIN || 60);
+        const ttl = Number(process.env.EMAIL_VERIFY_TTL_MIN || 60);
         const rawToken = await TokenService.mintSingleUseToken({
             userId: user.id,
             type: "email_verify",
@@ -80,8 +69,8 @@ export class AuthService {
         };
     }
 
-    public async loginUser({ email, password }): Promise<LoginResult> {
-        const normEmail: string = String(email).trim().toLowerCase();
+    async loginUser( email, password ) {
+        const normEmail = String(email).trim().toLowerCase();
 
         const user = await this.repo.users().findOne({ "secret.email": normEmail })
             .collation({ locale: "en", strength: 2 })
@@ -91,7 +80,7 @@ export class AuthService {
             throw new InvalidCredentialsError();
         }
 
-        const isMatch: boolean = await bcrypt.compare(password, user.secret.passwordHash);
+        const isMatch = await bcrypt.compare(password, user.secret.passwordHash);
         if (!isMatch) {
             throw new InvalidCredentialsError();
         }
@@ -108,5 +97,5 @@ export class AuthService {
     }
 }
 
-const authService = new AuthService (repo)
+const authService = new AuthService(repo)
 export default authService;

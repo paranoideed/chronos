@@ -1,32 +1,27 @@
 import crypto from "crypto";
 import mongoose from "mongoose";
-import type { Repo } from "../repo/Repo.js";
-import {TokenInvalidOrExpiredError, TokenTypeMismatchError} from "./errors/error.js";
-import repo from "../repo/Repo.js";
+import {
+    TokenInvalidOrExpiredError,
+    TokenTypeMismatchError,
+} from "./errors/error.js";
+import repo from "../repo/repo.js";
 
-const toHash = (raw: string): string =>
+const toHash = (raw) =>
     crypto.createHash("sha256").update(raw).digest("hex");
 
-type MintSingleUseTokenArgs = {
-    userId: string;
-    type: string;
-    ttlMinutes?: number;
-    meta?: any;
-};
-
 class ApprovalService {
-    private repo: Repo;
+    repo;
 
-    constructor(repo: Repo) {
+    constructor(repo) {
         this.repo = repo;
     }
 
-    public async mintSingleUseToken({
+    async mintSingleUseToken(
         userId,
         type,
         ttlMinutes = 60,
         meta = null,
-    }: MintSingleUseTokenArgs): Promise<string> {
+    ) {
         await this.repo.approvalTokens().updateMany(
             {
                 userId: new mongoose.Types.ObjectId(userId),
@@ -52,7 +47,7 @@ class ApprovalService {
         return raw;
     }
 
-    public async consume(rawToken: string, expectedType: string): Promise<any> {
+    async consume(rawToken, expectedType) {
         const hash = toHash(rawToken);
         const rec = await this.repo.approvalTokens().findOne({
             tokenHash: hash,
@@ -73,7 +68,7 @@ class ApprovalService {
         return rec;
     }
 
-    public async peek(rawToken: string, expectedType: string): Promise<any> {
+    async peek(rawToken, expectedType) {
         const hash = toHash(rawToken);
         const rec = await this.repo.approvalTokens().findOne({
             tokenHash: hash,
@@ -91,7 +86,7 @@ class ApprovalService {
         return rec;
     }
 
-    public async lastByUserAndType(userId: string, type: string): Promise<any> {
+    async lastByUserAndType(userId, type) {
         return this.repo
             .approvalTokens()
             .findOne({

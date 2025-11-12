@@ -1,17 +1,15 @@
 import { z } from 'zod';
-import type { NextFunction, Request, Response } from "express";
 
-import type { AuthService } from "../../domain/auth.js";
 import {loginSchema, registerSchema} from "../requests/auth.js";
 
 export class AuthController {
-    private auth: AuthService;
+    auth;
 
-    constructor(authService: AuthService) {
+    constructor(authService) {
         this.auth = authService;
     }
 
-    public async register(req: Request, res: Response, next: NextFunction) {
+    public async register(req, res, next) {
         const candidate = {
             email: req.body.email,
             password: req.body.password,
@@ -32,7 +30,7 @@ export class AuthController {
         }
     }
 
-    public async login(req: Request, res: Response, next: NextFunction) {
+    public async login(req, res, next) {
         const candidate = {
             email: req.body.email,
             password: req.body.password,
@@ -53,4 +51,3 @@ export class AuthController {
         }
     }
 }
-

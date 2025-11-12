@@ -1,20 +1,19 @@
 import mongoose from "mongoose";
 import { Events, ReminderEvent, TaskEvent } from "../repo/models/EventModel.js";
 import { CalendarMembers } from "../repo/models/CalendarMemberModel.js";
-import type {Repo} from "../repo/Repo.js";
 import {ForbiddenError} from "./errors/error.js";
 import repo from "../repo/repo.js";
 
 const asObjId = (id) => new mongoose.Types.ObjectId(id);
 
 export class EventService {
-    private repo: Repo;
+    repo;
 
-    constructor(repo: Repo) {
+    constructor(repo) {
         this.repo = repo;
     }
 
-    private async ensureMember(calendarId, userId) {
+    async ensureMember(calendarId, userId) {
         const member = await CalendarMembers.findOne({
             calendarId: asObjId(calendarId),
             userId: asObjId(userId),
@@ -25,17 +24,17 @@ export class EventService {
         return member;
     };
 
-    private ensureRole (member, allowed) {
+    ensureRole (member, allowed) {
         if (!allowed.includes(member.role)) throw new ForbiddenError();
     };
 
-    private pickTypeModel(type) {
+    pickTypeModel(type) {
         if (type === "reminder") return ReminderEvent;
         if (type === "task") return TaskEvent;
         return Events;
     };
 
-    public async list(
+    async list(
         userId,
         calendarId,
         { from, to, types, page = 1, limit = 20 }
@@ -81,7 +80,7 @@ export class EventService {
         };
     };
 
-    public async get(userId, calendarId, eventId) {
+    async get(userId, calendarId, eventId) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor", "viewer"]);
 
@@ -94,7 +93,7 @@ export class EventService {
         return { ...doc, id: doc._id };
     };
 
-    public async create(userId, calendarId, data) {
+    async create(userId, calendarId, data) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor"]);
 
@@ -125,7 +124,7 @@ export class EventService {
         return { ...lean, id: lean.id ?? String(doc._id) };
     };
 
-    public async update(userId, calendarId, eventId, patch) {
+    async update(userId, calendarId, eventId, patch) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor"]);
 
@@ -144,7 +143,7 @@ export class EventService {
         return { ...doc, id: doc._id };
     };
 
-    public async delete(userId, calendarId, eventId) {
+    async delete(userId, calendarId, eventId) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor"]);
 
