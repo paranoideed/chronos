@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import { generateToken } from "../pkg/jwt.js";
-import { TokenService } from "./tokenService.js";
-import MailService from "./mailService.js";
+import approvalService from "./approval.js";
+import mailService from "./mail.js";
 import { InvalidCredentialsError, UserExistsError } from "./errors/error.js";
 import repo from "../repo/repo.js";
 
@@ -55,13 +55,13 @@ class AuthService {
         });
 
         const ttl = Number(process.env.EMAIL_VERIFY_TTL_MIN || 60);
-        const rawToken = await TokenService.mintSingleUseToken({
-            userId: user.id,
+        const rawToken = await approvalService.mintSingleUseToken({
+            userId: user._id,
             type: "email_verify",
             ttlMinutes: ttl,
         });
 
-        await MailService.sendEmailVerification(user.secret.email, rawToken);
+        await mailService.sendEmailVerification(user.secret.email, rawToken);
 
         return {
             message: "Users registered successfully",

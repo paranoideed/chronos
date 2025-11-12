@@ -1,6 +1,6 @@
 import mongoose, {Model} from "mongoose";
 import {userModel} from "./models/user.js";
-import {calendarMemberModel} from "./models/calendar_member.js";
+import {calendarMemberModel} from "./models/calendarMember.js";
 import {notificationModel} from "./models/notification.js";
 import {calendarModel} from "./models/calendar.js";
 import {eventAttendeeModel} from "./models/event_attendee.js";
@@ -16,6 +16,15 @@ export class Repo {
     constructor(uri) {
         this.uri = uri;
     }
+
+    async connect() {    
+        try {        
+        const conn = await mongoose.connect(this.uri);        
+        console.log(`Database connected successfully: ${conn.connection.host}`);    
+    } catch (error) {        
+        console.error(`Error connecting to database: ${error.message}`);        
+        process.exit(1);
+    }}
 
     /**
      * @returns {Model}

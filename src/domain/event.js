@@ -1,7 +1,7 @@
 import mongoose from "mongoose";
-import { Events, ReminderEvent, TaskEvent } from "../repo/models/EventModel.js";
-import { CalendarMembers } from "../repo/models/CalendarMemberModel.js";
-import {ForbiddenError} from "./errors/error.js";
+import { Events, ReminderEvent, TaskEvent } from "../repo/models/event.js";
+import { calendarMemberModel } from "../repo/models/calendarMember.js";
+import { ForbiddenError } from "./errors/error.js";
 import repo from "../repo/repo.js";
 
 const asObjId = (id) => new mongoose.Types.ObjectId(id);
@@ -14,7 +14,7 @@ export class EventService {
     }
 
     async ensureMember(calendarId, userId) {
-        const member = await CalendarMembers.findOne({
+        const member = await calendarMembers.findOne({
             calendarId: asObjId(calendarId),
             userId: asObjId(userId),
             status: "accepted",

@@ -1,6 +1,6 @@
 import { Router } from "express";
 import { authRequired } from "../middlewares/auth.js";
-import * as eventController from "../controllers/eventController.js";
+import * as eventController from "../controllers/events.js";
 
 const router = Router({ mergeParams: true });
 

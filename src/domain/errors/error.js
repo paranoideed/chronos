@@ -1,16 +1,5 @@
-export type ErrorCode =
-    | "FORBIDDEN" | "NOT_FOUND" |  // <- generic error
-    | "USER_EXISTS" | "INVALID_CREDENTIALS" // <- only auth errors
-    | "TOKEN_INVALID_OR_EXPIRED" | "TOKEN_TYPE_MISMATCH" // <- only approval token errors
-    | "PRIMARY_EXISTS"; // <- only calendar errors
-
 export class AppError extends Error {
-    public code: ErrorCode;
-
-    public status: number;
-    public details: any;
-
-    constructor(code: ErrorCode, message: string, status = 500, details: any = null) {
+    constructor(code, message, status = 500, details = null) {
         super(message);
         this.code = code;
         this.status = status;

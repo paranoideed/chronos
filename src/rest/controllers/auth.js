@@ -9,7 +9,7 @@ export class AuthController {
         this.auth = authService;
     }
 
-    public async register(req, res, next) {
+    async register(req, res, next) {
         const candidate = {
             email: req.body.email,
             password: req.body.password,
@@ -22,7 +22,7 @@ export class AuthController {
         }
 
         try {
-            const payload = await this.auth.registerUser(parsed.data);
+            const payload = await this.auth.registerUser(parsed.data.email, parsed.data.password);
             res.status(201).json(payload);
         } catch (err) {
             console.error("Registration error:", err);
@@ -30,7 +30,7 @@ export class AuthController {
         }
     }
 
-    public async login(req, res, next) {
+    async login(req, res, next) {
         const candidate = {
             email: req.body.email,
             password: req.body.password,
@@ -43,7 +43,7 @@ export class AuthController {
         }
 
         try {
-            const payload = await this.auth.loginUser(parsed.data);
+            const payload = await this.auth.loginUser(parsed.data.email, parsed.data.password);
             res.status(200).json(payload);
         } catch (error) {
             console.error("Login error:", error);

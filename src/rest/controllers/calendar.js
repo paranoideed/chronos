@@ -1,6 +1,6 @@
 import z, { ZodError } from "zod";
 
-import * as calendarService from "../../domain/calendarService.js";
+import calendarService from "../../domain/callendar.js";
 import {
     createCalendarSchema,
     getCalendarSchema,
@@ -8,14 +8,14 @@ import {
     updateCalendarSchema
 } from "../requests/calendar.js";
 
-export class CalendarController {
+class CalendarController {
     service
 
     constructor(calendarService) {
         this.service = calendarService;
     }
 
-    public async create(req, res, next) {
+    async create(req, res, next) {
         const candidate = {
             type: req.body.type,
             name: req.body.name,
@@ -38,7 +38,7 @@ export class CalendarController {
         }
     }
 
-    public async listMine(req, res, next) {
+    async listMine(req, res, next) {
         const candidate = {
             userId: req.user.id,
 
@@ -62,7 +62,7 @@ export class CalendarController {
         }
     }
 
-    public async get(req, res, next) {
+    async get(req, res, next) {
         const candidate = {
             userId: req.user.id,
             calendarId: req.params.calendarId,
@@ -86,7 +86,7 @@ export class CalendarController {
         }
     }
 
-    public async update(req, res, next) {
+    async update(req, res, next) {
         const candidate = {
             userId: req.user.id,
             calendarId: req.params.calendarId,
@@ -114,7 +114,7 @@ export class CalendarController {
         }
     }
 
-    public async remove(req, res, next) {
+    async remove(req, res, next) {
         const candidate = {
             userId: req.user.id,
             calendarId: req.params.calendarId,
@@ -135,3 +135,6 @@ export class CalendarController {
         }
     }
 }
+
+const calendarController = new CalendarController(calendarService);
+export default calendarController;

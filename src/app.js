@@ -2,7 +2,7 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import authRoutes from './rest/routes/authRoutes.js';
+import authRoutes from './rest/routes/auth.js';
 import calendarRoutes from './rest/routes/calendarRoutes.js';
 import eventRoutes from './rest/routes/eventRoutes.js';
 

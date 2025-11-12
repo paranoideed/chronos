@@ -5,8 +5,9 @@ import {
     getOneSchema,
     listEventsSchema,
     removeSchema,
-} from "../requests/eventDto.js";
-import * as eventService from "../../domain/eventService.js";
+} from "../requests/event.js";
+import * as eventService from "../../domain/event.js";
+
 
 export const list = async (req, res) => {
     try {
