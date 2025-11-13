@@ -1,8 +1,7 @@
 import { z } from 'zod';
-
 import {loginSchema, registerSchema} from "../requests/auth.js";
 
-export class AuthController {
+export default class AuthController {
     auth;
 
     constructor(authService) {

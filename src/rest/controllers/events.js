@@ -6,143 +6,92 @@ import {
     listEventsSchema,
     removeSchema,
 } from "../requests/event.js";
-import * as eventService from "../../domain/event.js";
 
+export default class EventController {
+    #eventService;
 
-export const list = async (req, res) => {
-    try {
-        const { params, query } = listEventsSchema.parse({
-            params: req.params,
-            query: req.query,
-        });
-        const data = await eventService.list(
-            req.user.id,
-            params.calendarId,
-            query
-        );
-        res.status(200).json(data);
-    } catch (err) {
-        if (err instanceof ZodError) {
-            return res.status(400).json({
-                message: "Validation error",
-                errors: err.issues.map((i) => ({
-                    field: i.path.join("."),
-                    message: i.message,
-                })),
-            });
+    constructor(eventService) {
+        this.#eventService = eventService;
+        if (!eventService) {
+            throw new Error("EventsController requires an eventService");
         }
-        const code = err.message === "FORBIDDEN" ? 403 : 500;
-        res.status(code).json({ message: err.message });
     }
-};
-
-export const getOne = async (req, res) => {
-    try {
-        const { params } = getOneSchema.parse({ params: req.params });
-        const item = await eventService.getOne(
-            req.user.id,
-            params.calendarId,
-            params.id
-        );
-        res.status(200).json({ event: item });
-    } catch (err) {
-        if (err instanceof ZodError) {
-            return res.status(400).json({
-                message: "Validation error",
-                errors: err.issues.map((i) => ({
-                    field: i.path.join("."),
-                    message: i.message,
-                })),
+    list = async (req, res, next) => {
+        try {
+            const { params, query } = listEventsSchema.parse({
+                params: req.params,
+                query: req.query,
             });
-        }
-        return res
-            .status(
-                err.message === "FORBIDDEN"
-                    ? 403
-                    : err.message === "NOT_FOUND"
-                    ? 404
-                    : 500
-            )
-            .json({ message: err.message });
-    }
-};
+            const data = await this.#eventService.list(
+                req.user.id,
+                params.calendarId,
+                query
+            );
+            res.status(200).json(data);
+        } catch (err) {
 
-export const create = async (req, res) => {
-    try {
-        const { params, body } = createEventSchema.parse({
-            params: req.params,
-            body: req.body,
-        });
-        const created = await eventService.create(
-            req.user.id,
-            params.calendarId,
-            body
-        );
-        res.status(201).json({ event: created });
-    } catch (err) {
-        if (err instanceof ZodError) {
-            return res.status(400).json({
-                message: "Validation error",
-                errors: err.issues.map((i) => ({
-                    field: i.path.join("."),
-                    message: i.message,
-                })),
+            next(err); 
+        }
+    };
+
+    getOne = async (req, res, next) => {
+        try {
+            const { params } = getOneSchema.parse({ params: req.params });
+            const item = await this.#eventService.getOne(
+                req.user.id,
+                params.calendarId,
+                params.id
+            );
+            res.status(200).json({ event: item });
+        } catch (err) {
+            next(err);
+        }
+    };
+
+    create = async (req, res, next) => {
+        try {
+            const { params, body } = createEventSchema.parse({
+                params: req.params,
+                body: req.body,
             });
+            const created = await this.#eventService.create(
+                req.user.id,
+                params.calendarId,
+                body
+            );
+            res.status(201).json({ event: created });
+        } catch (err) {
+            next(err);
         }
-        const code = err.message === "FORBIDDEN" ? 403 : 500;
-        res.status(code).json({ message: err.message });
-    }
-};
+    };
 
-export const update = async (req, res) => {
-    try {
-        const { params, body } = updateEventSchema.parse({
-            params: req.params,
-            body: req.body,
-        });
-        const updated = await eventService.update(
-            req.user.id,
-            params.calendarId,
-            params.id,
-            body
-        );
-        res.status(200).json({ event: updated });
-    } catch (err) {
-        if (err instanceof ZodError) {
-            return res.status(400).json({
-                message: "Validation error",
-                errors: err.issues.map((i) => ({
-                    field: i.path.join("."),
-                    message: i.message,
-                })),
+    update = async (req, res, next) => {
+        try {
+            const { params, body } = updateEventSchema.parse({
+                params: req.params,
+                body: req.body,
             });
+            const updated = await this.#eventService.update(
+                req.user.id,
+                params.calendarId,
+                params.id,
+                body
+            );
+            res.status(200).json({ event: updated });
+        } catch (err) {
+            next(err);
         }
-        return res
-            .status(
-                err.message === "FORBIDDEN"
-                    ? 403
-                    : err.message === "NOT_FOUND"
-                    ? 404
-                    : 500
-            )
-            .json({ message: err.message });
-    }
-};
+    };
 
-export const remove = async (req, res) => {
-    try {
-        const { params } = removeSchema.parse({ params: req.params });
-        await eventService.remove(req.user.id, params.calendarId, params.id);
-        res.status(204).send();
-    } catch (err) {
-        return res
-            .status(
-                err.message === "FORBIDDEN"
-                    ? 403
-                    : err.message === "NOT_FOUND"
-                    ? 404
-                    : 500
-            )
-            .json({ message: err.message });
-    }
-};
+    remove = async (req, res, next) => {
+        try {
+            const { params } = removeSchema.parse({ params: req.params });
+            await this.#eventService.remove(req.user.id, params.calendarId, params.id);
+            res.status(204).send();
+        } catch (err) {
+            next(err);
+        }
+    };
+}
+
+

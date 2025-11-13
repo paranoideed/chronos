@@ -1,6 +1,6 @@
 import nodemailer from "nodemailer";
 
-class MailService {
+export default class MailService {
     constructor() {
         this.transporter = nodemailer.createTransport({
             host: process.env.MAIL_HOST,
@@ -20,7 +20,7 @@ class MailService {
             process.env.FRONTEND_BASE_URL ||
             process.env.PUBLIC_BASE_URL ||
             process.env.APP_BASE_URL;
-        const url = `${base?.replace(/\/+$/, "")}/verify?token=${rawToken}`;
+        const url = `${base?.replace(/\/+$/, "")}/verify-email?token=${rawToken}`;
 
         const html = `
             <h2>Email Verification</h2>
@@ -36,6 +36,3 @@ class MailService {
         });
     }
 }
-
-const mailService = new MailService();
-export default mailService;

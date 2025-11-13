@@ -2,11 +2,10 @@ import mongoose from "mongoose";
 import { Events, ReminderEvent, TaskEvent } from "../repo/models/event.js";
 import { calendarMemberModel } from "../repo/models/calendarMember.js";
 import { ForbiddenError } from "./errors/error.js";
-import repo from "../repo/repo.js";
 
 const asObjId = (id) => new mongoose.Types.ObjectId(id);
 
-export class EventService {
+export default class EventService {
     repo;
 
     constructor(repo) {
@@ -156,6 +155,3 @@ export class EventService {
         return true;
     };
 }
-
-const eventService = new EventService(repo);
-export default eventService;

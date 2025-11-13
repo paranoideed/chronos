@@ -4,11 +4,10 @@ import {
     ForbiddenError,
     PrimaryCalendarExistsError,
 } from "./errors/error.js";
-import repo from "../repo/repo.js";
 
 const asObjId = (id) => new mongoose.Types.ObjectId(id);
 
-class CalendarsService {
+export default class CalendarsService {
     repo;
 
     constructor(repo) {
@@ -169,6 +168,3 @@ class CalendarsService {
         return true;
     }
 }
-
-const calendarsService = new CalendarsService(repo);
-export default calendarsService;

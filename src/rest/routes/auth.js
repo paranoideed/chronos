@@ -1,16 +1,22 @@
 import { Router } from 'express';
-import { AuthController } from "../controllers/auth.js";
-import authService from "../../domain/auth.js";
+import { loginSchema, registerSchema } from '../requests/auth.js';
 
-const authRouter = Router();
-const authController = new AuthController(authService);
+export default function makeAuthRoutes({ controller, mw }) {
+  const r = Router();
 
-authRouter.post('/register',
-    (req, res, next) => authController.register(req, res, next)
-);
+  r.post(
+    '/register',
+    mw.validate({ body: registerSchema }),
+    (req, res, next) => controller.register(req, res, next)
+  );
 
-authRouter.post('/login',
-    (req, res, next) => authController.login(req, res, next)
-);
+  r.post(
+    '/login',
+    mw.validate({ body: loginSchema }),
+    (req, res, next) => controller.login(req, res, next)
+  );
 
-export default authRouter;
+  r.post('/logout', mw.auth, (req, res, next) => controller.logout(req, res, next));
+
+  return r;
+}

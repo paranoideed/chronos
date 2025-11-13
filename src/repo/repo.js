@@ -3,9 +3,9 @@ import {userModel} from "./models/user.js";
 import {calendarMemberModel} from "./models/calendarMember.js";
 import {notificationModel} from "./models/notification.js";
 import {calendarModel} from "./models/calendar.js";
-import {eventAttendeeModel} from "./models/event_attendee.js";
+import {eventAttendeeModel} from "./models/eventAttendee.js";
 import {eventModel, Events} from "./models/event.js";
-import {ApprovalTokenModel} from "./models/approval_token.js";
+import {ApprovalTokenModel} from "./models/approvalToken.js";
 
 export class Repo {
     uri;
@@ -76,6 +76,3 @@ export class Repo {
         return mongoose.model("Notifications", notificationModel);
     }
 }
-
-const repo = new Repo(process.env.MONGO_URI);
-export default repo;

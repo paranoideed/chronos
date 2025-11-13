@@ -1,6 +1,6 @@
 import z, { ZodError } from "zod";
 
-import calendarService from "../../domain/callendar.js";
+import calendarService from "../../domain/calendar.js";
 import {
     createCalendarSchema,
     getCalendarSchema,
@@ -8,7 +8,7 @@ import {
     updateCalendarSchema
 } from "../requests/calendar.js";
 
-class CalendarController {
+export default class CalendarController {
     service
 
     constructor(calendarService) {
@@ -135,6 +135,3 @@ class CalendarController {
         }
     }
 }
-
-const calendarController = new CalendarController(calendarService);
-export default calendarController;

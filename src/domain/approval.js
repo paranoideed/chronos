@@ -4,24 +4,23 @@ import {
     TokenInvalidOrExpiredError,
     TokenTypeMismatchError,
 } from "./errors/error.js";
-import repo from "../repo/repo.js";
 
 const toHash = (raw) =>
     crypto.createHash("sha256").update(raw).digest("hex");
 
-class ApprovalService {
+export default class ApprovalService {
     repo;
 
     constructor(repo) {
         this.repo = repo;
     }
 
-    async mintSingleUseToken(
+    async mintSingleUseToken({
         userId,
         type,
         ttlMinutes = 60,
         meta = null,
-    ) {
+    }) {
         await this.repo.approvalTokens().updateMany(
             {
                 userId: new mongoose.Types.ObjectId(userId),
@@ -38,9 +37,11 @@ class ApprovalService {
 
         await this.repo.approvalTokens().create({
             tokenHash: hash,
+            //userId: new mongoose.Types.ObjectId(userId),
             userId,
             type,
             meta,
+            used: false,
             expiresAt,
         });
 
@@ -97,6 +98,3 @@ class ApprovalService {
             .lean();
     }
 }
-
-const approvalService = new ApprovalService(repo);
-export default approvalService;

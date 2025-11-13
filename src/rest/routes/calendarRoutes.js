@@ -1,14 +1,23 @@
 import { Router } from "express";
-import { authRequired } from "../middlewares/auth.js";
-import calendarController from "../controllers/calendar.js";
-const router = Router();
 
-router.use(authRequired);
+export default function makeCalendarRoutes({ controller, mw }) {
+    const r = Router();
+    r.use(mw.auth);
 
-router.get("/", calendarController.listMine); // GET /api/calendars
-router.post("/", calendarController.create); // POST /api/calendars
-router.get("/:id", calendarController.get); // GET /api/calendars/:id
-router.patch("/:id", calendarController.update); // PATCH /api/calendars/:id
-router.delete("/:id", calendarController.remove); // DELETE /api/calendars/:id
+    // GET /api/calendars
+    r.get("/", (req, res, next) => controller.listMine(req, res, next));
 
-export default router;
+    // POST /api/calendars
+    r.post("/", (req, res, next) => controller.create(req, res, next));
+
+    // GET /api/calendars/:id
+    r.get("/:id", (req, res, next) => controller.get(req, res, next));
+
+    // PATCH /api/calendars/:id
+    r.patch("/:id", (req, res, next) => controller.update(req, res, next));
+
+    // DELETE /api/calendars/:id
+    r.delete("/:id", (req, res, next) => controller.remove(req, res, next));
+
+    return r;
+}

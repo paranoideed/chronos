@@ -1,16 +1,19 @@
+import approvalService from "../../domain/approval.js";
 import {approveRequestSchema, resendVerificationSchema} from "../requests/approval.js";
 import z from "zod";
 
-class ApprovalController {
-    approvalService
-    userService
+export default class ApprovalController {
+    approvalService;
+    userService;
+    mailService;
 
-    constructor(service, userService) {
+    constructor(service, userService, mailService) {
         this.approvalService = service;
         this.userService = userService;
+        this.mailService = mailService;
     }
 
-    public async verifyEmail(req, res, next) {
+    async verifyEmail(req, res, next) {
         const candidate = {
             token: req.query.token,
         };
@@ -42,10 +45,10 @@ class ApprovalController {
         }
     }
     
-    public async resendVerification(req, res, next) {
+    async resendVerification(req, res, next) {
         const candidate = {
-            userId: req.user.id,
-            email: req.body.email,
+            userId: req.user?.id,
+            email: req.body?.email,
         };
         
         const parsed = resendVerificationSchema.safeParse(candidate);
@@ -56,7 +59,7 @@ class ApprovalController {
         
         try {
             const user = candidate.userId
-                ? await this.userService.get(userId)
+                ? await this.userService.get(candidate.userId)
                 : await this.userService.getByEmail(String(candidate.email).trim().toLowerCase());
         } catch (err) {
             console.error("Resend verification error:", err);
@@ -64,5 +67,3 @@ class ApprovalController {
         }
     }
 }
-
-

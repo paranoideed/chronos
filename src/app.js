@@ -2,11 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 import morgan from 'morgan';
-import authRoutes from './rest/routes/auth.js';
-import calendarRoutes from './rest/routes/calendarRoutes.js';
-import eventRoutes from './rest/routes/eventRoutes.js';
 
-export function buildApp() {
+import { initRepo } from './init/repo.js';
+import { initServices } from './init/services.js';
+import { initControllers } from './init/controllers.js';
+import { initRoutes } from './init/routes.js';
+import jwt from './pkg/jwt.js';
+import { auth as authFactory } from './rest/middlewares/auth.js';
+import { validate } from './rest/middlewares/validate.js';
+
+export async function buildApp() {
     const app = express();
 
     app.use(helmet());
@@ -20,23 +25,28 @@ export function buildApp() {
     app.use(express.urlencoded({ extended: true }));
     app.use(morgan('dev'));
 
+    const { repo } = await initRepo(process.env.MONGO_URI);
+    const services = initServices({ repo, jwt });
+    const controllers = initControllers(services);
+
+    const middlewares = {
+        auth: authFactory({ jwtLib: jwt }), 
+        validate,
+    };
+
     // --- Routes ---
     app.get('/health', (req, res) => {
         res.status(200).json({ status: 'ok', message: 'Server is running' });
     });
 
-    app.use('/api/auth', authRoutes);
-    app.use('/api/calendars', calendarRoutes);
-    app.use('/api/calendars/:calendarId/events', eventRoutes);
-    
-    // DEV: uncomment for email verifying
-    // app.get('/verify', (req, res) => {
-    //     const { token } = req.query;
-    //     if (!token) return res.status(400).send('Token is required');
-    //     res.redirect(
-    //         `/api/auth/verify-email?token=${encodeURIComponent(token)}`
-    //     );
-    // });
+    for (const { basePath, router } of initRoutes(controllers, middlewares)) {
+        app.use(basePath, router);
+    }
+
+    app.use((err, req, res, next) => {
+        const status = err.statusCode || (err.message === 'FORBIDDEN' ? 403 : err.message === 'NOT_FOUND' ? 404 : 500);
+        res.status(status).json({ message: err.message || 'Internal error' });
+    });
 
     return app;
 }

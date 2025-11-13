@@ -1,9 +1,8 @@
 import bcrypt from "bcryptjs";
-import { generateToken } from "../pkg/jwt.js";
+import generateToken from "../pkg/jwt.js";
 import approvalService from "./approval.js";
 import mailService from "./mail.js";
 import { InvalidCredentialsError, UserExistsError } from "./errors/error.js";
-import repo from "../repo/repo.js";
 
 const deriveNameFromEmail = (email) => {
     const local = email.split("@")[0] || "";
@@ -17,7 +16,7 @@ const deriveNameFromEmail = (email) => {
     );
 };
 
-class AuthService {
+export default class AuthService {
     repo;
 
     constructor(repo) {
@@ -71,7 +70,8 @@ class AuthService {
 
     async loginUser( email, password ) {
         const normEmail = String(email).trim().toLowerCase();
-
+        console.log("repo keys:", Object.keys(this.repo));
+        console.log("typeof this.repo.users:", typeof this.repo.users);
         const user = await this.repo.users().findOne({ "secret.email": normEmail })
             .collation({ locale: "en", strength: 2 })
             .select("+secret.passwordHash");
@@ -96,6 +96,3 @@ class AuthService {
         };
     }
 }
-
-const authService = new AuthService(repo)
-export default authService;

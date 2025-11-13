@@ -1,24 +1,28 @@
 import { Router } from "express";
-import { authRequired } from "../middlewares/auth.js";
-import * as eventController from "../controllers/events.js";
+import { createEventSchema, updateEventSchema } from "../requests/event.js";
 
-const router = Router({ mergeParams: true });
+export default function makeEventRoutes({ controller, mw }) {
+    const r = Router({ mergeParams: true });
+    r.use(mw.auth);
 
-router.use(authRequired);
+    // GET /api/calendars/:calendarId/events
+    r.get("/", (req, res, next) => controller.list(req, res, next));
 
-// GET /api/calendars/:calendarId/events?from=&to=&types=&page=&limit=
-router.get("/", eventController.list);
+    // POST /api/calendars/:calendarId/events
+    r.post("/", mw.validate(createEventSchema), (req, res, next) =>
+        controller.create(req, res, next)
+    );
 
-// POST /api/calendars/:calendarId/events
-router.post("/", eventController.create);
+    // GET /api/calendars/:calendarId/events/:id
+    r.get("/:id", (req, res, next) => controller.getOne(req, res, next));
 
-// GET /api/calendars/:calendarId/events/:id
-router.get("/:id", eventController.getOne);
+    // PATCH /api/calendars/:calendarId/events/:id
+    r.patch("/:id", mw.validate(updateEventSchema), (req, res, next) =>
+        controller.update(req, res, next)
+    );
 
-// PATCH /api/calendars/:calendarId/events/:id
-router.patch("/:id", eventController.update);
+    // DELETE /api/calendars/:calendarId/events/:id
+    r.delete("/:id", (req, res, next) => controller.remove(req, res, next));
 
-// DELETE /api/calendars/:calendarId/events/:id
-router.delete("/:id", eventController.remove);
-
-export default router;
+    return r;
+}
