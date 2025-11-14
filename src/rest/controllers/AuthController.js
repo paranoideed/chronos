@@ -18,7 +18,7 @@ export default class AuthController {
     async registerUser(req, res, next) {
         console.log("Registration request received:", req.body);
 
-        const parsed = registerSchema.safeParse({req});
+        const parsed = registerSchema.safeParse(req.body);
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
@@ -37,7 +37,7 @@ export default class AuthController {
     async loginUser(req, res, next) {
         console.log("Login request received:", req.body);
 
-        const parsed = loginSchema.safeParse(req);
+        const parsed = loginSchema.safeParse(req.body);
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
@@ -54,14 +54,15 @@ export default class AuthController {
     }
 
     async verifyEmail(req, res, next) {
-        const parsed = approveRequestSchema.safeParse(req);
+        const parsed = approveRequestSchema.safeParse(req.query)
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
 
         try {
-            const rec = await this.authCore.consume(req.body.token, "email_verify");
+            const { token } = parsed.data;
+            const rec = await this.authCore.consume(token, "email_verify");
             if (!rec) {
                 console.log("Approval record not found for token");
                 return res.status(403).json({ message: "Invalid or expired token" });
@@ -88,7 +89,7 @@ export default class AuthController {
     }
 
     async resendVerification(req, res, next) {
-        const parsed = resendVerificationSchema.safeParse(req);
+        const parsed = resendVerificationSchema.safeParse(req.body);
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));

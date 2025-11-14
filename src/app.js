@@ -4,13 +4,17 @@ import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
 import {Repo} from "./repo/Repo.js";
+
 import AuthCore from "./core/AuthCore.js";
 import EventCore from "./core/EventCore.js";
 import CalendarCore from "./core/CalendarCore.js";
 import UserCore from "./core/UserCore.js";
+
 import AuthController from "./rest/controllers/AuthController.js";
 import CalendarController from "./rest/controllers/CalendarController.js";
 import EventController from "./rest/controllers/EventController.js";
+
+import createAuthRouter from "./rest/routes/authRoutes.js";
 
 export default class App {
     repository
@@ -30,15 +34,13 @@ export default class App {
     async startHttpServer(port) {
         await this.repository.connect();
 
-        const authController = new AuthController(this.core.authCore, this.core.userCore);
+        // initialize controllers
+        const authController = new AuthController(
+            this.core.authCore,
+            this.core.userCore
+        );
         const calendarController = new CalendarController(this.core.calendarCore);
         const eventController = new EventController(this.core.eventCore);
-
-        const router = express.Router();
-
-        router.post('/register', (req, res, next) => {
-            authController.registerUser(req, res, next)
-        });
 
         const service = express()
         service.use(helmet());
@@ -49,7 +51,11 @@ export default class App {
         service.use(express.json());
         service.use(express.urlencoded({ extended: true }));
 
-        service.use('/api', router);
+        // create routers with fabric
+        const authRouter = createAuthRouter(authController);
+
+        // connect
+        service.use('/api/auth', authRouter);
 
         service.get('/ping', (req, res) => {
             res.status(200).json({ status: 'ok', message: 'pong!' });
@@ -58,7 +64,7 @@ export default class App {
         service.use(errorRendererMiddleware);
 
         service.listen(port, () => {
-            console.log(`Server is running on port ${port}`);
+            console.log(`Server is running on port http://localhost:${port}`);
         });
     }
 }
