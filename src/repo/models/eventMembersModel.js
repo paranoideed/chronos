@@ -2,7 +2,7 @@ import mongoose from 'mongoose';
 
 const eventAttendeeStatus = ['pending', 'accepted', 'declined'];
 
-export const eventAttendeeModel = new mongoose.Schema(
+export const eventMembersSchema = new mongoose.Schema(
     {
         eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Events', required: true },
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Users', required: true },
@@ -11,11 +11,11 @@ export const eventAttendeeModel = new mongoose.Schema(
     { timestamps: true }
 );
 
-eventAttendeeModel.virtual('id').get(function () {
+eventMembersSchema.virtual('id').get(function () {
     return this._id.toHexString();
 });
 
-eventAttendeeModel.set('toJSON', {
+eventMembersSchema.set('toJSON', {
     virtuals: true,
     versionKey: false,
 
@@ -27,3 +27,5 @@ eventAttendeeModel.set('toJSON', {
         delete ret._id;
     }
 });
+
+export const eventMembersModel = mongoose.model('EventMembers', eventMembersSchema);

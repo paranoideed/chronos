@@ -8,10 +8,17 @@ export class AppError extends Error {
     }
 }
 
-export class UserExistsError extends AppError {
+export class UserAlreadyExistsError extends AppError {
     constructor(message = "User with this email already exists") {
         super("USER_EXISTS", message, 409);
-        Object.setPrototypeOf(this, UserExistsError.prototype);
+        Object.setPrototypeOf(this, UserAlreadyExistsError.prototype);
+    }
+}
+
+export class UserNotFoundError extends AppError {
+    constructor(message = "User not found") {
+        super("USER_NOT_FOUND", message, 404);
+        Object.setPrototypeOf(this, UserNotFoundError.prototype);
     }
 }
 

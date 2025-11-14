@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-export const eventModel = new mongoose.Schema(
+export const eventSchema = new mongoose.Schema(
     {
         calendarId: {
             type: mongoose.Schema.Types.ObjectId,
@@ -19,11 +19,11 @@ export const eventModel = new mongoose.Schema(
     { timestamps: true, discriminatorKey: 'type' }
 );
 
-eventModel.virtual('id').get(function () {
+eventSchema.virtual('id').get(function () {
     return this._id.toHexString();
 });
 
-eventModel.set('toJSON', {
+eventSchema.set('toJSON', {
     virtuals: true,
     versionKey: false,
 
@@ -37,7 +37,7 @@ eventModel.set('toJSON', {
 });
 
 
-export const Events = mongoose.model('Events', eventModel);
+export const eventModel = mongoose.model('Events', eventSchema);
 
 const arrangementSchema = new mongoose.Schema({
     startAt: {
@@ -63,19 +63,20 @@ arrangementSchema.pre('save', function (next) {
     next();
 });
 
-export const ArrangementEvent = Events.discriminator(
+// я вообще не выкупаю зачем все эти 3 эти штуки нужны объясни мне в тг пожалуйста
+export const ArrangementEvent = eventModel.discriminator(
     'arrangement',
     arrangementSchema
 );
 
-export const ReminderEvent = Events.discriminator(
+export const ReminderEvent = eventModel.discriminator(
     'reminder',
     new mongoose.Schema({
         remindAt: { type: Date, required: true },
     })
 );
 
-export const TaskEvent = Events.discriminator(
+export const TaskEvent = eventModel.discriminator(
     'task',
     new mongoose.Schema({
         dueAt: { type: Date, required: true },

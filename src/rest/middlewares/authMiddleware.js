@@ -1,4 +1,4 @@
-export function auth({ jwtLib, secret = process.env.JWT_SECRET }) {
+export function authMiddleware({ jwtLib, secret = process.env.JWT_SECRET }) {
     if (!jwtLib) {
         throw new Error("auth middleware requires jwtLib");
     }

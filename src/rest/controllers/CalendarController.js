@@ -1,36 +1,29 @@
-import z, { ZodError } from "zod";
-
-import calendarService from "../../domain/calendar.js";
+import { z } from "zod";
 import {
     createCalendarSchema,
     getCalendarSchema,
-    listMyCalendarsSchema, removeCalendarSchema,
+    listMyCalendarsSchema,
+    removeCalendarSchema,
     updateCalendarSchema
 } from "../requests/calendar.js";
 
 export default class CalendarController {
-    service
+    core
 
     constructor(calendarService) {
-        this.service = calendarService;
+        this.core = calendarService;
     }
 
-    async create(req, res, next) {
-        const candidate = {
-            type: req.body.type,
-            name: req.body.name,
-            description: req.body.description,
-            color: req.body.color,
-        }
-
-        const parsed = createCalendarSchema.safeParse({ body: candidate });
+    async createCalendar(req, res, next) {
+        const parsed = createCalendarSchema.safeParse(req);
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
 
         try {
-            const cal = await this.service.createCalendar(req.user.id, parsed.data.body);
+            const cal = await this.core.createCalendar(req.user.id, parsed.data.body);
+            console.log("Created calendar:", cal);
             res.status(201).json({ calendar: cal });
         } catch (err) {
             console.error("Calendar creation error:", err);
@@ -38,23 +31,16 @@ export default class CalendarController {
         }
     }
 
-    async listMine(req, res, next) {
-        const candidate = {
-            userId: req.user.id,
-
-            // u need add pagination it will be good I think u know how to do it and what it is
-            // page: req.query.page ? parseInt(req.query.page, 10) : undefined,
-            // limit: req.query.limit ? parseInt(req.query.limit, 10) : undefined,
-        }
-
-        const parsed = listMyCalendarsSchema.safeParse(candidate);
+    async listMineCalendars(req, res, next) {
+        const parsed = listMyCalendarsSchema.safeParse(req);
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
 
         try {
-            const data = await this.service.listMyCalendars(candidate);
+            //вот тут добавь пагинацию потом
+            const data = await this.core.listMyCalendars(req.user.id);
             res.status(200).json({ items: data });
         } catch (err) {
             console.error("Listing calendars error:", err);
@@ -62,20 +48,15 @@ export default class CalendarController {
         }
     }
 
-    async get(req, res, next) {
-        const candidate = {
-            userId: req.user.id,
-            calendarId: req.params.calendarId,
-        }
-
-        const parsed = getCalendarSchema.safeParse(candidate);
+    async getCalendar(req, res, next) {
+        const parsed = getCalendarSchema.safeParse(req);
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
 
         try {
-            const cal = await this.service.getCalendar(
+            const cal = await this.core.getCalendar(
                 req.user.id,
                 req.params.id
             );
@@ -86,27 +67,20 @@ export default class CalendarController {
         }
     }
 
-    async update(req, res, next) {
-        const candidate = {
-            userId: req.user.id,
-            calendarId: req.params.calendarId,
-            name: req.body.name,
-            description: req.body.description,
-            color: req.body.color,
-        }
-
-        const parsed = updateCalendarSchema.safeParse({ body: candidate.updates });
+    async updateCalendar(req, res, next) {
+        const parsed = updateCalendarSchema.safeParse(req);
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
 
         try {
-            const cal = await this.service.updateCalendar(
+            const cal = await this.core.updateCalendar(
                 req.user.id,
                 req.params.id,
-                candidate.updates
+                req.body,
             );
+            console.log("Updated calendar:", cal);
             res.status(200).json({ calendar: cal });
         } catch (err) {
             console.error("Updating calendar error:", err);
@@ -114,20 +88,15 @@ export default class CalendarController {
         }
     }
 
-    async remove(req, res, next) {
-        const candidate = {
-            userId: req.user.id,
-            calendarId: req.params.calendarId,
-        }
-
-        const parsed = removeCalendarSchema.safeParse(candidate);
+    async deleteCalendar(req, res, next) {
+        const parsed = removeCalendarSchema.safeParse(req);
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
 
         try {
-            await this.service.deleteCalendar(req.user.id, req.params.id);
+            await this.core.deleteCalendar(req.user.id, req.params.id);
             res.status(204).send();
         } catch (err) {
             console.error("Deleting calendar error:", err);

@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const NotificationChannels = ['email', 'profile'];
 const NotificationStatuses = ['pending', 'sent', 'failed'];
 
-export const notificationModel = new mongoose.Schema(
+export const notificationSchema = new mongoose.Schema(
     {
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Users', required: true },
         eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Events', required: true },
@@ -14,11 +14,11 @@ export const notificationModel = new mongoose.Schema(
     { timestamps: true }
 );
 
-notificationModel.virtual('id').get(function () {
+notificationSchema.virtual('id').get(function () {
     return this._id.toHexString();
 });
 
-notificationModel.set('toJSON', {
+notificationSchema.set('toJSON', {
     virtuals: true,
     versionKey: false,
 
@@ -31,4 +31,4 @@ notificationModel.set('toJSON', {
     }
 });
 
-// export const Notifications = mongoose.model('Notifications', notificationSchema);
+export const notificationModel = mongoose.model('Notifications', notificationSchema);

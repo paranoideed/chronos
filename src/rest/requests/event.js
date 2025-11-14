@@ -16,8 +16,7 @@ export const createEventSchema = z.object({
     params: z.object({
         calendarId: z.string().trim().min(1),
     }),
-    body: z
-        .object({
+    body: z.object({
             type: z.enum(EVENT_TYPES),
             allDay: z.boolean().optional(),
             startAt: isoDate.optional(),

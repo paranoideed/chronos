@@ -1,6 +1,5 @@
 import jwt from 'jsonwebtoken';
 
-//Function kind like `=>` usually dosent exports and usually uses like anonym
 export default function generateToken(userId) {
     return jwt.sign(
         { id: userId }, 

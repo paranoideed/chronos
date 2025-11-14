@@ -1,11 +1,12 @@
 import mongoose, {Model} from "mongoose";
-import {userModel} from "./models/user.js";
-import {calendarMemberModel} from "./models/calendarMember.js";
-import {notificationModel} from "./models/notification.js";
-import {calendarModel} from "./models/calendar.js";
-import {eventAttendeeModel} from "./models/eventAttendee.js";
-import {eventModel, Events} from "./models/event.js";
-import {ApprovalTokenModel} from "./models/approvalToken.js";
+import {userModel} from "./models/userModel.js";
+import {approvalTokenModel} from "./models/approvalTokenModel.js";
+import {calendarModel} from "./models/calendarModel.js";
+import {calendarMemberModel} from "./models/calendarMemberModel.js";
+import * as Events from "node:events";
+import {eventModel} from "./models/eventModel.js";
+import {eventMembersModel} from "./models/eventMembersModel.js";
+import {notificationModel} from "./models/notificationModel.js";
 
 export class Repo {
     uri;
@@ -30,35 +31,35 @@ export class Repo {
      * @returns {Model}
      */
     users() {
-        return mongoose.model("Users", userModel);
+        return userModel
     }
 
     /**
      * @returns {Model}
      */
     approvalTokens() {
-        return mongoose.model("ApprovalTokens", ApprovalTokenModel);
+        return approvalTokenModel;
     }
 
     /**
      * @returns {Model}
      */
     calendars() {
-        return mongoose.model("Calendars", calendarModel);
+        return calendarModel
     }
 
     /**
      * @returns {Model}
      */
     calendarMembers() {
-        return mongoose.model("CalendarMembers", calendarMemberModel);
+        return calendarMemberModel;
     }
 
     /**
      * @returns {Model}
      */
     events() {
-        return Events;
+        return eventModel;
     }
 
     /**
@@ -66,13 +67,13 @@ export class Repo {
      * @returns {Model}
      */
     eventAttendees(eventType) {
-        return mongoose.model("EventAttendees", eventAttendeeModel);
+        return eventMembersModel;
     }
 
     /**
      * @returns {Model}
      */
     notification() {
-        return mongoose.model("Notifications", notificationModel);
+        return notificationModel;
     }
 }

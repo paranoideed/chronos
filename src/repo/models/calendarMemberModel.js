@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const MemberRoles = ['owner', 'editor', 'viewer'];
 const MemberStatus = ['pending', 'accepted', 'declined'];
 
-export const calendarMemberModel = new mongoose.Schema(
+export const calendarMemberSchema = new mongoose.Schema(
     {
         calendarId: { type: mongoose.Schema.Types.ObjectId, ref: 'Calendars', required: true },
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Users', required: true },
@@ -13,11 +13,11 @@ export const calendarMemberModel = new mongoose.Schema(
     { timestamps: true }
 );
 
-calendarMemberModel.virtual('id').get(function () {
+calendarMemberSchema.virtual('id').get(function () {
     return this._id.toHexString();
 });
 
-calendarMemberModel.set('toJSON', {
+calendarMemberSchema.set('toJSON', {
     virtuals: true,
     versionKey: false,
     
@@ -29,3 +29,5 @@ calendarMemberModel.set('toJSON', {
         delete ret._id; 
     }
 });
+
+export const calendarMemberModel = mongoose.model('CalendarMembers', calendarMemberSchema);

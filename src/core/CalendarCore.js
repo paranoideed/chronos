@@ -3,15 +3,23 @@ import {
     CalendarNotFoundError,
     ForbiddenError,
     PrimaryCalendarExistsError,
-} from "./errors/error.js";
+} from "./errors/errors.js";
 
 const asObjId = (id) => new mongoose.Types.ObjectId(id);
 
-export default class CalendarsService {
+export default class CalendarCore {
     repo;
 
     constructor(repo) {
         this.repo = repo;
+    }
+
+    ensureRole(member, roles) {
+        if (!roles.includes(member.role)) {
+            throw new ForbiddenError(
+                "You don't have enough permissions to perform this action"
+            );
+        }
     }
 
     async ensureMember(calendarId, userId) {
@@ -31,23 +39,12 @@ export default class CalendarsService {
         return member;
     }
 
-    ensureRole(member, roles) {
-        if (!roles.includes(member.role)) {
-            throw new ForbiddenError(
-                "You don't have enough permissions to perform this action"
-            );
-        }
-    }
-
-    async createCalendar(
-        userId,
-        {
-            type,
-            name,
-            description,
-            color,
-        }
-    ) {
+    async createCalendar(userId, {
+        type,
+        name,
+        description,
+        color,
+    }) {
         if (type === "primary") {
             const existingPrimary = await this.repo
                 .calendarMembers()
@@ -125,14 +122,14 @@ export default class CalendarsService {
     async updateCalendar(
         userId,
         calendarId,
-        patch
+        { type, name, description, color } // я короче не понимаб что тут за патч
     ) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor"]);
 
         const updated = await this.repo
             .calendars()
-            .findByIdAndUpdate(calendarId, { $set: patch }, { new: true })
+            .findByIdAndUpdate(calendarId, { $set: { type, name, description, color }}, { new: true })
             .lean();
 
         if (!updated) {

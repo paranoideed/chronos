@@ -1,19 +1,28 @@
 import mongoose from "mongoose";
-import { Events, ReminderEvent, TaskEvent } from "../repo/models/event.js";
-import { calendarMemberModel } from "../repo/models/calendarMember.js";
-import { ForbiddenError } from "./errors/error.js";
+import {EventNotFoundError, ForbiddenError} from "./errors/errors.js";
+import {ReminderEvent, TaskEvent} from "../repo/models/eventModel.js";
 
 const asObjId = (id) => new mongoose.Types.ObjectId(id);
 
-export default class EventService {
+export default class EventCore {
     repo;
 
     constructor(repo) {
         this.repo = repo;
     }
 
+    ensureRole (member, allowed) {
+        if (!allowed.includes(member.role)) throw new ForbiddenError();
+    };
+
+    pickTypeModel(type) {
+        if (type === "reminder") return ReminderEvent;
+        if (type === "task") return TaskEvent;
+        return this.repo.events();
+    };
+
     async ensureMember(calendarId, userId) {
-        const member = await calendarMembers.findOne({
+        const member = await this.repo.calendarMembers().findOne({
             calendarId: asObjId(calendarId),
             userId: asObjId(userId),
             status: "accepted",
@@ -23,17 +32,7 @@ export default class EventService {
         return member;
     };
 
-    ensureRole (member, allowed) {
-        if (!allowed.includes(member.role)) throw new ForbiddenError();
-    };
-
-    pickTypeModel(type) {
-        if (type === "reminder") return ReminderEvent;
-        if (type === "task") return TaskEvent;
-        return Events;
-    };
-
-    async list(
+    async listEvents(
         userId,
         calendarId,
         { from, to, types, page = 1, limit = 20 }
@@ -63,13 +62,13 @@ export default class EventService {
             filter.$expr = { $in: ["$__t", list] };
         }
 
-        const docs = await Events.find(filter)
+        const docs = await this.repo.events().find(filter)
             .sort({ startAt: 1, remindAt: 1, dueAt: 1, createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit)
             .lean();
 
-        const total = await Events.countDocuments(filter);
+        const total = await this.repo.events().countDocuments(filter);
 
         return {
             items: docs.map((d) => ({ ...d, id: d._id })),
@@ -79,11 +78,11 @@ export default class EventService {
         };
     };
 
-    async get(userId, calendarId, eventId) {
+    async getEvent(userId, calendarId, eventId) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor", "viewer"]);
 
-        const doc = await Events.findOne({
+        const doc = await this.repo.events().findOne({
             _id: asObjId(eventId),
             calendarId: asObjId(calendarId),
         }).lean();
@@ -92,30 +91,41 @@ export default class EventService {
         return { ...doc, id: doc._id };
     };
 
-    async create(userId, calendarId, data) {
+    async createEvent(userId, calendarId, {
+        title,
+        description,
+        type,
+        allDay,
+        startAt,
+        endAt,
+        location,
+        remindAt,
+        dueAt,
+        isDone,
+    }) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor"]);
 
-        const Model = this.pickTypeModel(data.type);
+        const Model = this.pickTypeModel(type);
 
         const payload = {
             calendarId: asObjId(calendarId),
             createdBy: asObjId(userId),
-            title: data.title,
-            description: data.description,
+            title: title,
+            description: description,
         };
 
-        if (data.type === "meeting") {
+        if (type === "meeting") {
             Object.assign(payload, {
-                allDay: !!data.allDay,
-                startAt: data.startAt,
-                endAt: data.endAt,
-                location: data.location,
+                allDay: !!allDay,
+                startAt: startAt,
+                endAt: endAt,
+                location: location,
             });
-        } else if (data.type === "reminder") {
-            Object.assign(payload, { remindAt: data.remindAt });
-        } else if (data.type === "task") {
-            Object.assign(payload, { dueAt: data.dueAt, isDone: !!data.isDone });
+        } else if (type === "reminder") {
+            Object.assign(payload, { remindAt: remindAt });
+        } else if (type === "task") {
+            Object.assign(payload, { dueAt: dueAt, isDone: !!isDone });
         }
 
         const doc = await Model.create(payload);
@@ -123,35 +133,34 @@ export default class EventService {
         return { ...lean, id: lean.id ?? String(doc._id) };
     };
 
-    async update(userId, calendarId, eventId, patch) {
+    async updateEvent(userId, calendarId, eventId,{
+        title,
+        description,
+        color,
+    }) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor"]);
 
-        const update = { ...patch };
-        delete update.calendarId;
-        delete update.createdBy;
-        delete update.type;
-
         const opts = { new: true, lean: true };
-        const doc = await Events.findOneAndUpdate(
+        const doc = await this.repo.events().findOneAndUpdate(
             { _id: asObjId(eventId), calendarId: asObjId(calendarId) },
-            { $set: update },
+            { $set: { title, description, color } },
             opts
         );
-        if (!doc) throw new Error("NOT_FOUND");
+        if (!doc) throw new EventNotFoundError();
         return { ...doc, id: doc._id };
     };
 
-    async delete(userId, calendarId, eventId) {
+    async deleteEvent(userId, calendarId, eventId) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor"]);
 
-        const res = await Events.findOneAndDelete({
+        const res = await this.repo.events().findOneAndDelete({
             _id: asObjId(eventId),
             calendarId: asObjId(calendarId),
         }).lean();
 
-        if (!res) throw new Error("NOT_FOUND");
+        if (!res) throw new EventNotFoundError();
         return true;
     };
 }

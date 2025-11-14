@@ -1,10 +1,10 @@
 import 'dotenv/config'
-import { buildApp } from "./app.js";
+import {runService} from "./cli.js";
 
 const PORT = Number(process.env.PORT || 3000);
 
 const start = async () => {
-    const app = await buildApp();
+    const app = await runService();
     app.listen(PORT, () => {
         console.log(`Server listening on http://localhost:${PORT}`);
     });

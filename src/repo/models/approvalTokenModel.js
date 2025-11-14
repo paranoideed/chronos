@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 
-export const ApprovalTokenModel = new mongoose.Schema(
+export const approvalTokenSchema = new mongoose.Schema(
     {
         tokenHash: { type: String, required: true, index: true, unique: true },
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Users', required: true, index: true },
@@ -12,4 +12,6 @@ export const ApprovalTokenModel = new mongoose.Schema(
     { timestamps: true }
 );
 
-ApprovalTokenModel.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+approvalTokenSchema.index({ expiresAt: 1 }, { expireAfterSeconds: 0 });
+
+export const approvalTokenModel = mongoose.model('ApprovalTokens', approvalTokenSchema);
