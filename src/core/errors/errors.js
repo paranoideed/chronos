@@ -1,10 +1,35 @@
 export class AppError extends Error {
+    status
+    code
+    details
+
     constructor(code, message, status = 500, details = null) {
         super(message);
         this.code = code;
         this.status = status;
         this.details = details;
         Object.setPrototypeOf(this, AppError.prototype);
+    }
+}
+
+export class BadRequest extends AppError {
+    constructor(message = "Bad Request", details = null) {
+        super("BAD_REQUEST", message, 400, details);
+        Object.setPrototypeOf(this, BadRequest.prototype);
+    }
+}
+
+export class UnauthorizedError extends AppError {
+    constructor(message = "Unauthorized") {
+        super("UNAUTHORIZED", message, 401);
+        Object.setPrototypeOf(this, UnauthorizedError.prototype);
+    }
+}
+
+export class Internal extends AppError {
+    constructor(message = "Internal Server Error") {
+        super("INTERNAL_ERROR", message, 500);
+        Object.setPrototypeOf(this, Internal.prototype);
     }
 }
 

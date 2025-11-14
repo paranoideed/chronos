@@ -16,7 +16,9 @@ export default class AuthController {
     }
 
     async registerUser(req, res, next) {
-        const parsed = registerSchema.safeParse(req);
+        console.log("Registration request received:", req.body);
+
+        const parsed = registerSchema.safeParse({req});
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
@@ -33,6 +35,8 @@ export default class AuthController {
     }
 
     async loginUser(req, res, next) {
+        console.log("Login request received:", req.body);
+
         const parsed = loginSchema.safeParse(req);
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);

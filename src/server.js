@@ -1,16 +1,20 @@
-import 'dotenv/config'
-import {runService} from "./cli.js";
+import 'dotenv/config';
+import App from './app.js';
 
-const PORT = Number(process.env.PORT || 3000);
+const PORT = Number(process.env.PORT ?? 3000);
+const MONGO_URI = process.env.MONGO_URI;
+
+if (!MONGO_URI) {
+    console.error('MONGO_URI is not set');
+    process.exit(1);
+}
 
 const start = async () => {
-    const app = await runService();
-    app.listen(PORT, () => {
-        console.log(`Server listening on http://localhost:${PORT}`);
-    });
+    const app = new App(MONGO_URI);
+    await app.startHttpServer(PORT);
 };
 
 start().catch((e) => {
-    console.error("Failed to start server", e);
+    console.error('Failed to start server', e);
     process.exit(1);
 });

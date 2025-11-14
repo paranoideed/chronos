@@ -98,7 +98,7 @@ export default class EventController {
         }
     };
 
-    async removeEvent(req, res, next) {
+    async deleteEvent(req, res, next) {
         const parsed = removeSchema.safeParse(req);
         if (!parsed.success) {
             console.error("Validation error:", parsed.error.issues);
@@ -106,7 +106,7 @@ export default class EventController {
         }
 
         try {
-            await this.core.removeEvent(req.user.id, req.params.calendarId, req.params.id);
+            await this.core.deleteEvent(req.user.id, req.params.calendarId, req.params.id);
             res.status(204).send();
         } catch (err) {
             console.error("Error in remove:", err);
