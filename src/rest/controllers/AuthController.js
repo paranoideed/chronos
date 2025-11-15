@@ -62,24 +62,7 @@ export default class AuthController {
 
         try {
             const { token } = parsed.data;
-            const rec = await this.authCore.consume(token, "email_verify");
-            if (!rec) {
-                console.log("Approval record not found for token");
-                return res.status(403).json({ message: "Invalid or expired token" });
-            }
-
-            const user = await this.userCore.get(rec.userId);
-            if (!user) {
-                console.log("User not found for ID:", rec.userId);
-                return res.status(404).json({ message: "Users not found" });
-            }
-
-            if (!user.secret) user.secret = {};
-            user.secret.emailVerified = true;
-            user.secret.emailVerifiedAt = new Date();
-            await user.save();
-            //вот тут тоже не понимаю .save что это за метод и для чего он нужен тут может я что-то убрал хз
-
+            const user = await this.authCore.verifyEmailByToken(token);
             console.log("Email verified for user ID:", user.id);
             return res.status(200).json({ message: "Email verified successfully" });
         } catch (err) {
@@ -88,28 +71,29 @@ export default class AuthController {
         }
     }
 
-    async resendVerification(req, res, next) {
-        const parsed = resendVerificationSchema.safeParse(req.body);
-        if (!parsed.success) {
-            console.log("Validation error:", parsed.error.issues);
-            return res.status(400).json(z.treeifyError(parsed.error));
-        }
+    // потом доделаю если время будет
+    // async resendVerification(req, res, next) {
+    //     const parsed = resendVerificationSchema.safeParse(req.body);
+    //     if (!parsed.success) {
+    //         console.log("Validation error:", parsed.error.issues);
+    //         return res.status(400).json(z.treeifyError(parsed.error));
+    //     }
 
-        try {
-            const user = req.user.id
-                ? await this.userCore.getUserById(req.user.id)
-                : await this.userCore.getUserByEmail(String(req.body.email).trim().toLowerCase());
+    //     try {
+    //         const user = req.user.id
+    //             ? await this.userCore.getUserById(req.user.id)
+    //             : await this.userCore.getUserByEmail(String(req.body.email).trim().toLowerCase());
 
-            if (!user) {
-                console.log("User not found for resend verification");
-                return res.status(404).json({ message: "User not found" });
-            }
+    //         if (!user) {
+    //             console.log("User not found for resend verification");
+    //             return res.status(404).json({ message: "User not found" });
+    //         }
 
-            // короче тут еще чето наверное должно быть я хуй знает что я запутался чуть но вот
-            // ну мне так кажется или я чето не понял
-        } catch (err) {
-            console.error("Resend verification error:", err);
-            next(err);
-        }
-    }
+    //         // короче тут еще чето наверное должно быть я хуй знает что я запутался чуть но вот
+    //         // ну мне так кажется или я чето не понял
+    //     } catch (err) {
+    //         console.error("Resend verification error:", err);
+    //         next(err);
+    //     }
+    // }
 }

@@ -15,9 +15,9 @@ export default function createAuthRouter(authController) {
         authController.verifyEmail(req, res, next)
     );
 
-    router.post("/resend-verification", (req, res, next) =>
-        authController.resendVerification(req, res, next)
-    );
+    // router.post("/resend-verification", (req, res, next) =>
+    //     authController.resendVerification(req, res, next)
+    // );
 
     return router;
 }

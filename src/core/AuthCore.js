@@ -4,7 +4,7 @@ import {
     InvalidCredentialsError,
     TokenInvalidOrExpiredError,
     TokenTypeMismatchError,
-    UserAlreadyExistsError
+    UserAlreadyExistsError,
 } from "./errors/errors.js";
 import nodemailer from "nodemailer";
 import mongoose from "mongoose";
@@ -22,8 +22,7 @@ const deriveNameFromEmail = (email) => {
     );
 };
 
-const toHash = (raw) =>
-    crypto.createHash("sha256").update(raw).digest("hex");
+const toHash = (raw) => crypto.createHash("sha256").update(raw).digest("hex");
 
 export default class AuthCore {
     repo;
@@ -44,7 +43,7 @@ export default class AuthCore {
         this.from = process.env.MAIL_FROM || process.env.MAIL_USER;
     }
 
-    async registerUser( email, password ) {
+    async registerUser(email, password) {
         const normEmail = String(email).trim().toLowerCase();
 
         const existingUser = await this.repo.users().findOne({
@@ -94,11 +93,13 @@ export default class AuthCore {
         };
     }
 
-    async loginUser( email, password ) {
+    async loginUser(email, password) {
         const normEmail = String(email).trim().toLowerCase();
         console.log("repo keys:", Object.keys(this.repo));
         console.log("typeof this.repo.users:", typeof this.repo.users);
-        const user = await this.repo.users().findOne({ "secret.email": normEmail })
+        const user = await this.repo
+            .users()
+            .findOne({ "secret.email": normEmail })
             .collation({ locale: "en", strength: 2 })
             .select("+secret.passwordHash");
 
@@ -152,12 +153,7 @@ export default class AuthCore {
     }
 
     // это второй метод связанный с токенами, который должен быть тут по тем же причинам что и выше
-    async mintSingleUseToken({
-        userId,
-        type,
-        ttlMinutes = 60,
-        meta = null,
-    }) {
+    async mintSingleUseToken({ userId, type, ttlMinutes = 60, meta = null }) {
         await this.repo.approvalTokens().updateMany(
             {
                 userId: new mongoose.Types.ObjectId(userId),
@@ -234,5 +230,17 @@ export default class AuthCore {
             })
             .sort({ createdAt: -1 })
             .lean();
+    }
+
+    async verifyEmailByToken(rawToken) {
+        const rec = await this.consume(rawToken, "email_verify");
+        const user = await this.repo.users().findById(rec.userId);
+        if (!user) throw new UserNotFoundError();
+
+        user.secret.emailVerified = true;
+        user.secret.emailVerifiedAt = new Date();
+        await user.save();
+
+        return user;
     }
 }
