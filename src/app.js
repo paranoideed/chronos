@@ -3,6 +3,7 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
+import jwt from "jsonwebtoken";
 import {Repo} from "./repo/Repo.js";
 
 import AuthCore from "./core/AuthCore.js";
@@ -15,6 +16,8 @@ import CalendarController from "./rest/controllers/CalendarController.js";
 import EventController from "./rest/controllers/EventController.js";
 
 import createAuthRouter from "./rest/routes/authRoutes.js";
+import createCalendarRouter from "./rest/routes/calendarRoutes.js";
+import { createAuthMiddleware } from "./rest/middlewares/authMiddleware.js";
 
 export default class App {
     repository
@@ -42,6 +45,11 @@ export default class App {
         const calendarController = new CalendarController(this.core.calendarCore);
         const eventController = new EventController(this.core.eventCore);
 
+        const authMiddleware = createAuthMiddleware({
+            jwtLib: jwt,
+            jwtSecret: process.env.JWT_SECRET,
+        });
+
         const service = express()
         service.use(helmet());
         service.use(cors());
@@ -53,13 +61,14 @@ export default class App {
 
         // create routers with fabric
         const authRouter = createAuthRouter(authController);
+        const calendarRouter = createCalendarRouter(calendarController, authMiddleware);
 
-        // connect
-        service.use('/api/auth', authRouter);
-
+        // routers
         service.get('/ping', (req, res) => {
             res.status(200).json({ status: 'ok', message: 'pong!' });
         });
+        service.use('/api/auth', authRouter);
+        service.use('/api/calendars', calendarRouter);
 
         service.use(errorRendererMiddleware);
 
