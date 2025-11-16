@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 import {
     loginSchema,
     registerSchema,
@@ -18,14 +18,24 @@ export default class AuthController {
     async registerUser(req, res, next) {
         console.log("Registration request received:", req.body);
 
-        const parsed = registerSchema.safeParse(req.body);
+        const parsed = registerSchema.safeParse({
+            params: req.params,
+            query: req.query,
+            body: req.body,
+        });
+        
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
 
+        const { body } = parsed.data;
+
         try {
-            const user = await this.authCore.registerUser(req.body.email, req.body.password);
+            const user = await this.authCore.registerUser(
+                body.email,
+                body.password
+            );
             console.log("User registered:", user.userId);
             res.status(201).json(user);
         } catch (err) {
@@ -37,14 +47,24 @@ export default class AuthController {
     async loginUser(req, res, next) {
         console.log("Login request received:", req.body);
 
-        const parsed = loginSchema.safeParse(req.body);
+        const parsed = loginSchema.safeParse({
+            params: req.params,
+            query: req.query,
+            body: req.body,
+        });
+
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
 
+        const { body } = parsed.data;
+
         try {
-            const user = await this.authCore.loginUser(req.body.email, req.body.password);
+            const user = await this.authCore.loginUser(
+                body.email,
+                body.password
+            );
             console.log("User logged in:", user.userId);
             res.status(200).json(user);
         } catch (error) {
@@ -54,17 +74,26 @@ export default class AuthController {
     }
 
     async verifyEmail(req, res, next) {
-        const parsed = approveRequestSchema.safeParse(req.query)
+        const parsed = approveRequestSchema.safeParse({
+            params: req.params,
+            query: req.query,
+            body: req.body,
+        });
+
         if (!parsed.success) {
             console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
 
+        const { query } = parsed.data;
+        const { token } = query;
+
         try {
-            const { token } = parsed.data;
             const user = await this.authCore.verifyEmailByToken(token);
             console.log("Email verified for user ID:", user.id);
-            return res.status(200).json({ message: "Email verified successfully" });
+            return res
+                .status(200)
+                .json({ message: "Email verified successfully" });
         } catch (err) {
             console.error("Email verification error:", err);
             next(err);

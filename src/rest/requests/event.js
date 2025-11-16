@@ -1,4 +1,4 @@
-import z from "zod";
+import { z } from "zod";
 
 const EVENT_TYPES = ["meeting", "reminder", "task"];
 

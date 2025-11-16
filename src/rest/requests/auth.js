@@ -4,7 +4,7 @@ const passwordRegex = /^[a-zA-Z0-9\-.&?+@$%^:_!]+$/;
 const passwordError =
     "Password can only contain letters, numbers, and -.&?+@$%^:_!";
 
-export const registerSchema = z.object({
+const registerBodySchema = z.object({
     email: z.string().email({ message: "Invalid email format" }).max(256),
     password: z
         .string()
@@ -13,15 +13,31 @@ export const registerSchema = z.object({
         .regex(passwordRegex, { message: passwordError }),
 });
 
-export const loginSchema = z.object({
+const loginBodySchema = z.object({
     email: z.string().email({ message: "Invalid email format" }).max(256),
     password: z.string({ required_error: "Password is required" }),
 });
 
-export const approveRequestSchema = z.object({
+const approveRequestQuerySchema = z.object({
     token: z.string().min(1, "Token is required"),
 });
 
-export const resendVerificationSchema = z.object({
+const resendVerificationBodySchema = z.object({
     email: z.string().email({ message: "Invalid email format" }).max(256),
+});
+
+export const registerSchema = z.object({
+    body: registerBodySchema,
+});
+
+export const loginSchema = z.object({
+    body: loginBodySchema,
+});
+
+export const approveRequestSchema = z.object({
+    query: approveRequestQuerySchema,
+});
+
+export const resendVerificationSchema = z.object({
+    body: resendVerificationBodySchema,
 });
