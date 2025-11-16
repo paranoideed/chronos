@@ -1,4 +1,4 @@
-import { z } from 'zod';
+import { z } from "zod";
 import {
     createEventSchema,
     updateEventSchema,
@@ -16,26 +16,32 @@ export default class EventController {
             throw new Error("EventsController requires an eventService");
         }
     }
-    
+
     async listEvents(req, res, next) {
-        const parsed = listEventsSchema.safeParse(req);
+        const parsed = listEventsSchema.safeParse({
+            params: req.params,
+            query: req.query,
+        });
         if (!parsed.success) {
             console.error("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
 
         try {
+            const { calendarId } = parsed.data.params;
+            const { from, to, types, page, limit } = parsed.data.query;
+
             const data = await this.core.listEvents(
                 req.user.id,
-                req.params.calendarId,
-                req.query
+                calendarId,
+                { from, to, types, page, limit }
             );
             res.status(200).json(data);
         } catch (err) {
-            console.error("Error in list:", err);
-            next(err); 
+            console.error("Error in listEvents:", err);
+            next(err);
         }
-    };
+    }
 
     async getEvent(req, res, next) {
         const parsed = getOneSchema.safeParse(req);
@@ -55,64 +61,80 @@ export default class EventController {
             console.error("Error in getOne:", err);
             next(err);
         }
-    };
+    }
 
     async createEvent(req, res, next) {
-        const parsed = createEventSchema.safeParse(req);
+        const parsed = createEventSchema.safeParse({
+            params: req.params,
+            body: req.body,
+        });
         if (!parsed.success) {
-            console.error("Validation error:", parsed.error);
+            console.log("Validation error (createEvent):", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
+
+        const { params, body } = parsed.data;
 
         try {
-            const created = await this.core.createEvent(
+            const event = await this.core.createEvent(
                 req.user.id,
-                req.params.calendarId,
-                req.body
+                params.calendarId,
+                body
             );
-            res.status(201).json({ event: created });
+            return res.status(201).json(event);
         } catch (err) {
-            console.error("Error in create:", err);
+            console.error("Error in createEvent:", err);
             next(err);
         }
-    };
+    }
 
     async updateEvent(req, res, next) {
-        const parsed = updateEventSchema.parse(req);
+        const parsed = updateEventSchema.safeParse({
+            params: req.params,
+            body: req.body,
+        });
         if (!parsed.success) {
-            console.log("Validation error:", parsed.error)
+            console.log("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
+
+        const { params, body } = parsed.data;
 
         try {
             const updated = await this.core.updateEvent(
                 req.user.id,
-                req.params.calendarId,
-                req.params.id,
-                req.body
+                params.calendarId,
+                params.id,
+                body
             );
-            res.status(200).json({ event: updated });
+            return res.status(200).json(updated);
         } catch (err) {
             console.log("Error in update:", err);
             next(err);
         }
-    };
+    }
 
     async deleteEvent(req, res, next) {
-        const parsed = removeSchema.safeParse(req);
+        const parsed = removeSchema.safeParse({
+            params: req.params,
+        });
         if (!parsed.success) {
             console.error("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
         }
 
+        const { params } = parsed.data;
+
         try {
-            await this.core.deleteEvent(req.user.id, req.params.calendarId, req.params.id);
+            await this.core.deleteEvent(
+                req.user.id,
+                params.calendarId,
+                params.id
+            );
             res.status(204).send();
         } catch (err) {
-            console.error("Error in remove:", err);
+            console.error("Error in deleteEvent:", err);
             next(err);
         }
-    };
+    }
 }
-
-

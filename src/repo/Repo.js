@@ -3,7 +3,6 @@ import {userModel} from "./models/userModel.js";
 import {approvalTokenModel} from "./models/approvalTokenModel.js";
 import {calendarModel} from "./models/calendarModel.js";
 import {calendarMemberModel} from "./models/calendarMemberModel.js";
-import * as Events from "node:events";
 import {eventModel} from "./models/eventModel.js";
 import {eventMembersModel} from "./models/eventMembersModel.js";
 import {notificationModel} from "./models/notificationModel.js";

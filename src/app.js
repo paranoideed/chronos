@@ -17,6 +17,7 @@ import EventController from "./rest/controllers/EventController.js";
 
 import createAuthRouter from "./rest/routes/authRoutes.js";
 import createCalendarRouter from "./rest/routes/calendarRoutes.js";
+import createEventRouter from "./rest/routes/eventRoutes.js";
 import { createAuthMiddleware } from "./rest/middlewares/authMiddleware.js";
 
 export default class App {
@@ -35,22 +36,9 @@ export default class App {
     }
 
     async startHttpServer(port) {
-        await this.repository.connect();
-
-        // initialize controllers
-        const authController = new AuthController(
-            this.core.authCore,
-            this.core.userCore
-        );
-        const calendarController = new CalendarController(this.core.calendarCore);
-        const eventController = new EventController(this.core.eventCore);
-
-        const authMiddleware = createAuthMiddleware({
-            jwtLib: jwt,
-            jwtSecret: process.env.JWT_SECRET,
-        });
 
         const service = express()
+
         service.use(helmet());
         service.use(cors());
         service.use(morgan('dev')); // 'dev' - это формат логгирования
@@ -59,17 +47,30 @@ export default class App {
         service.use(express.json());
         service.use(express.urlencoded({ extended: true }));
 
-        // create routers with fabric
-        const authRouter = createAuthRouter(authController);
-        const calendarRouter = createCalendarRouter(calendarController, authMiddleware);
+        await this.repository.connect();
+
+        // initialize controllers
+        const authController = new AuthController(this.core.authCore, this.core.userCore);
+        const calendarController = new CalendarController(this.core.calendarCore);
+        const eventController = new EventController(this.core.eventCore);
+
+        // middleware
+        const authMiddleware = createAuthMiddleware({
+            jwtLib: jwt,
+            jwtSecret: process.env.JWT_SECRET,
+        });
 
         // routers
+        const authRouter = createAuthRouter(authController);
+        const calendarRouter = createCalendarRouter(calendarController, authMiddleware);
+        const eventRouter = createEventRouter(eventController, authMiddleware);
+
         service.get('/ping', (req, res) => {
             res.status(200).json({ status: 'ok', message: 'pong!' });
         });
         service.use('/api/auth', authRouter);
         service.use('/api/calendars', calendarRouter);
-
+        service.use('/api/calendars', eventRouter);
         service.use(errorRendererMiddleware);
 
         service.listen(port, () => {

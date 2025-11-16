@@ -8,7 +8,7 @@ export default class UserCore {
     }
 
     async getUserById(userId) {
-        const res = this.repo.users().findById(userId);
+        const res = await this.repo.users().findById(userId);
         if (!res) {
             throw new UserNotFoundError("User not found");
         }
