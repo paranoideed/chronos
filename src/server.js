@@ -1,23 +1,20 @@
 import 'dotenv/config';
-import { buildApp } from './app.js';
-import { connectDB } from './config/db.js';
+import App from './app.js';
 
-const app = buildApp();
-const PORT = process.env.PORT;
+const PORT = Number(process.env.PORT ?? 3000);
+const MONGO_URI = process.env.MONGO_URI;
 
-async function startServer() {
-    try {
-        // --- Connect to DB ---
-        await connectDB();
-
-        // --- Start server ---
-        app.listen(PORT, () => {
-            console.log(`Server is listening on http://localhost:${PORT}`);
-        })
-    } catch (err) {
-        console.error('Failed to start server', err);
-        process.exit(1);
-    }
+if (!MONGO_URI) {
+    console.error('MONGO_URI is not set');
+    process.exit(1);
 }
 
-startServer();
+const start = async () => {
+    const app = new App(MONGO_URI);
+    await app.startHttpServer(PORT);
+};
+
+start().catch((e) => {
+    console.error('Failed to start server', e);
+    process.exit(1);
+});

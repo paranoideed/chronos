@@ -1,0 +1,97 @@
+export class AppError extends Error {
+    status
+    code
+    details
+
+    constructor(code, message, status = 500, details = null) {
+        super(message);
+        this.code = code;
+        this.status = status;
+        this.details = details;
+        Object.setPrototypeOf(this, AppError.prototype);
+    }
+}
+
+export class BadRequest extends AppError {
+    constructor(message = "Bad Request", details = null) {
+        super("BAD_REQUEST", message, 400, details);
+        Object.setPrototypeOf(this, BadRequest.prototype);
+    }
+}
+
+export class UnauthorizedError extends AppError {
+    constructor(message = "Unauthorized") {
+        super("UNAUTHORIZED", message, 401);
+        Object.setPrototypeOf(this, UnauthorizedError.prototype);
+    }
+}
+
+export class Internal extends AppError {
+    constructor(message = "Internal Server Error") {
+        super("INTERNAL_ERROR", message, 500);
+        Object.setPrototypeOf(this, Internal.prototype);
+    }
+}
+
+export class UserAlreadyExistsError extends AppError {
+    constructor(message = "User with this email already exists") {
+        super("USER_EXISTS", message, 409);
+        Object.setPrototypeOf(this, UserAlreadyExistsError.prototype);
+    }
+}
+
+export class UserNotFoundError extends AppError {
+    constructor(message = "User not found") {
+        super("USER_NOT_FOUND", message, 404);
+        Object.setPrototypeOf(this, UserNotFoundError.prototype);
+    }
+}
+
+export class InvalidCredentialsError extends AppError {
+    constructor(message = "Invalid email or password") {
+        super("INVALID_CREDENTIALS", message, 401);
+        Object.setPrototypeOf(this, InvalidCredentialsError.prototype);
+    }
+}
+
+export class TokenInvalidOrExpiredError extends AppError {
+    constructor(message = "The token is invalid or has expired") {
+        super("TOKEN_INVALID_OR_EXPIRED", message, 400);
+        Object.setPrototypeOf(this, TokenInvalidOrExpiredError.prototype);
+    }
+}
+
+export class TokenTypeMismatchError extends AppError {
+    constructor(message = "The token type does not match the expected type") {
+        super("TOKEN_TYPE_MISMATCH", message, 400);
+        Object.setPrototypeOf(this, TokenTypeMismatchError.prototype);
+    }
+}
+
+export class ForbiddenError extends AppError {
+    constructor(message = "Forbidden") {
+        super("FORBIDDEN", message, 403);
+        Object.setPrototypeOf(this, ForbiddenError.prototype);
+    }
+}
+
+export class CalendarNotFoundError extends AppError {
+    constructor(message = "Calendar not found") {
+        super("NOT_FOUND", message, 404);
+        Object.setPrototypeOf(this, CalendarNotFoundError.prototype);
+    }
+}
+
+export class PrimaryCalendarExistsError extends AppError {
+    constructor(message = "Primary calendar already exists") {
+        super("PRIMARY_EXISTS", message, 409);
+        Object.setPrototypeOf(this, PrimaryCalendarExistsError.prototype);
+    }
+}
+
+export class EventNotFoundError extends AppError {
+    constructor(message = "Event not found") {
+        super("NOT_FOUND", message, 404);
+        Object.setPrototypeOf(this, EventNotFoundError.prototype);
+    }
+}
