@@ -4,7 +4,7 @@ import {
     InvalidCredentialsError,
     TokenInvalidOrExpiredError,
     TokenTypeMismatchError,
-    UserAlreadyExistsError,
+    UserAlreadyExistsError, UserNotFoundError,
 } from "./errors/errors.js";
 import nodemailer from "nodemailer";
 import mongoose from "mongoose";
@@ -47,7 +47,7 @@ export default class AuthCore {
         const normEmail = String(email).trim().toLowerCase();
 
         const existingUser = await this.repo.users().findOne({
-            "secret.email": normEmail,
+            "email": normEmail,
         }).collation({ locale: "en", strength: 2 });
 
         if (existingUser) {
@@ -57,7 +57,8 @@ export default class AuthCore {
         const passwordHash = await bcrypt.hash(password, 12);
 
         const user = await this.repo.users().create({
-            secret: { email: normEmail, passwordHash, emailVerified: false },
+            email: normEmail,
+            secret: { emailVerified: false, passwordHash },
             name: deriveNameFromEmail(normEmail),
         });
 
@@ -85,7 +86,7 @@ export default class AuthCore {
             ttlMinutes: ttl,
         });
 
-        await this.sendEmailVerification(user.secret.email, rawToken);
+        await this.sendEmailVerification(user.email, rawToken);
 
         return {
             message: "Users registered successfully",
@@ -99,7 +100,7 @@ export default class AuthCore {
         console.log("typeof this.repo.users:", typeof this.repo.users);
         const user = await this.repo
             .users()
-            .findOne({ "secret.email": normEmail })
+            .findOne({ "email": normEmail })
             .collation({ locale: "en", strength: 2 })
             .select("+secret.passwordHash");
 

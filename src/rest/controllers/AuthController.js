@@ -10,8 +10,8 @@ export default class AuthController {
     authCore;
     userCore;
 
-    constructor(service, userService) {
-        this.authCore = service;
+    constructor(authService, userService) {
+        this.authCore = authService;
         this.userCore = userService;
     }
 
@@ -29,12 +29,10 @@ export default class AuthController {
             return res.status(400).json(z.treeifyError(parsed.error));
         }
 
-        const { body } = parsed.data;
-
         try {
             const user = await this.authCore.registerUser(
-                body.email,
-                body.password
+                req.body.email,
+                req.body.password,
             );
             console.log("User registered:", user.userId);
             res.status(201).json(user);

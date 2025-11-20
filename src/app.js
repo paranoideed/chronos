@@ -19,6 +19,8 @@ import createAuthRouter from "./rest/routes/authRoutes.js";
 import createCalendarRouter from "./rest/routes/calendarRoutes.js";
 import createEventRouter from "./rest/routes/eventRoutes.js";
 import { createAuthMiddleware } from "./rest/middlewares/authMiddleware.js";
+import createUserRouter from "./rest/routes/userRouters.js";
+import UserController from "./rest/controllers/UserController.js";
 
 export default class App {
     repository
@@ -53,6 +55,7 @@ export default class App {
         const authController = new AuthController(this.core.authCore, this.core.userCore);
         const calendarController = new CalendarController(this.core.calendarCore);
         const eventController = new EventController(this.core.eventCore);
+        const userController = new UserController(this.core.userCore);
 
         // middleware
         const authMiddleware = createAuthMiddleware({
@@ -64,6 +67,7 @@ export default class App {
         const authRouter = createAuthRouter(authController);
         const calendarRouter = createCalendarRouter(calendarController, authMiddleware);
         const eventRouter = createEventRouter(eventController, authMiddleware);
+        const userRouter = createUserRouter(userController, authMiddleware);
 
         service.get('/ping', (req, res) => {
             res.status(200).json({ status: 'ok', message: 'pong!' });
@@ -71,6 +75,7 @@ export default class App {
         service.use('/api/auth', authRouter);
         service.use('/api/calendars', calendarRouter);
         service.use('/api/calendars', eventRouter);
+        service.use('/api/users', userRouter);
         service.use(errorRendererMiddleware);
 
         service.listen(port, () => {
