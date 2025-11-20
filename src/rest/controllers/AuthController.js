@@ -34,6 +34,7 @@ export default class AuthController {
                 req.body.email,
                 req.body.password,
             );
+
             console.log("User registered:", user.userId);
             res.status(201).json(user);
         } catch (err) {
@@ -63,6 +64,7 @@ export default class AuthController {
                 body.email,
                 body.password
             );
+
             console.log("User logged in:", user.userId);
             res.status(200).json(user);
         } catch (error) {

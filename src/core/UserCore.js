@@ -1,13 +1,16 @@
 import {UserNotFoundError} from "./errors/errors.js";
 import mongoose from "mongoose";
+import {updateUserAvatarSchema} from "../rest/requests/user.js";
 
 const asObjId = (id) => new mongoose.Types.ObjectId(id);
 
 export default class UserCore {
     repo;
+    bucket;
 
-    constructor(repo) {
+    constructor(repo, S3Bucket) {
         this.repo = repo;
+        this.bucket = S3Bucket;
     }
 
     async getUserById(userId) {
@@ -68,6 +71,12 @@ export default class UserCore {
         if (!user) {
             throw new UserNotFoundError("User not found");
         }
+
+        const { url: newAvatarUrl } = await this.bucket.putUserAvatar(
+            userId,
+            avatar,
+            avatar.mimetype
+        );
 
         const upd = await this.repo.users().findOneAndUpdate(
             { _id: asObjId(userId) },

@@ -21,6 +21,9 @@ import createEventRouter from "./rest/routes/eventRoutes.js";
 import { createAuthMiddleware } from "./rest/middlewares/authMiddleware.js";
 import createUserRouter from "./rest/routes/userRouters.js";
 import UserController from "./rest/controllers/UserController.js";
+import Approver from "./approvaler/Approver.js";
+import Mailer from "./mailer/Mailer.js";
+import {Bucket} from "./repo/aws/Bucket.js";
 
 export default class App {
     repository
@@ -29,8 +32,17 @@ export default class App {
     constructor(mongoUri) {
         this.repository = new Repo(mongoUri);
 
+        const mailer = new Mailer()
+        const approver = new Approver(this.repository, mailer);
+        const S3Bucket = new Bucket({
+            bucket: process.env.AWS_BUCKET_NAME,
+            region: process.env.AWS_REGION,
+            accessKeyId: process.env.AWS_ACCESS_KEY_ID,
+            secretAccessKey: process.env.AWS_ACCESS_SECRET,
+        });
+
         this.core = {
-            authCore: new AuthCore(this.repository),
+            authCore: new AuthCore(this.repository, approver),
             eventCore: new EventCore(this.repository),
             calendarCore: new CalendarCore(this.repository),
             userCore: new UserCore(this.repository),
