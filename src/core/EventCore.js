@@ -133,7 +133,7 @@ export default class EventCore {
         return { ...lean, id: lean.id ?? String(doc._id) };
     };
 
-    async updateEvent(userId, calendarId, eventId,{
+    async updateEvent(userId, calendarId, eventId, {
         title,
         description,
         color,

@@ -3,7 +3,6 @@ import express from "express";
 import helmet from "helmet";
 import cors from "cors";
 import morgan from "morgan";
-import jwt from "jsonwebtoken";
 import {Repo} from "./repo/Repo.js";
 
 import AuthCore from "./core/AuthCore.js";
@@ -18,7 +17,11 @@ import EventController from "./rest/controllers/EventController.js";
 import createAuthRouter from "./rest/routes/authRoutes.js";
 import createCalendarRouter from "./rest/routes/calendarRoutes.js";
 import createEventRouter from "./rest/routes/eventRoutes.js";
-import { createAuthMiddleware } from "./rest/middlewares/authMiddleware.js";
+import createUserRouter from "./rest/routes/userRouters.js";
+import UserController from "./rest/controllers/UserController.js";
+import Approver from "./approvaler/Approver.js";
+import Mailer from "./mailer/Mailer.js";
+import {Bucket} from "./repo/aws/Bucket.js";
 
 export default class App {
     repository
@@ -27,11 +30,20 @@ export default class App {
     constructor(mongoUri) {
         this.repository = new Repo(mongoUri);
 
+        const mailer = new Mailer()
+        const approver = new Approver(this.repository, mailer);
+        const S3Bucket = new Bucket({
+            bucketName: process.env.AWS_BUCKET_NAME,
+            region: process.env.AWS_REGION,
+            accessKeyId: process.env.AWS_ACCESS_KEY,
+            secretAccessKey: process.env.AWS_SECRET_ACCESS_KEY,
+        });
+
         this.core = {
-            authCore: new AuthCore(this.repository),
+            authCore: new AuthCore(this.repository, approver),
             eventCore: new EventCore(this.repository),
             calendarCore: new CalendarCore(this.repository),
-            userCore: new UserCore(this.repository),
+            userCore: new UserCore(this.repository, S3Bucket),
         };
     }
 
@@ -41,9 +53,8 @@ export default class App {
 
         service.use(helmet());
         service.use(cors());
-        service.use(morgan('dev')); // 'dev' - это формат логгирования
+        service.use(morgan('dev'));
 
-        // 2. ПАРСЕР ТЕЛА ЗАПРОСА (Обязательно до маршрутов с POST/PUT)
         service.use(express.json());
         service.use(express.urlencoded({ extended: true }));
 
@@ -53,24 +64,29 @@ export default class App {
         const authController = new AuthController(this.core.authCore, this.core.userCore);
         const calendarController = new CalendarController(this.core.calendarCore);
         const eventController = new EventController(this.core.eventCore);
-
-        // middleware
-        const authMiddleware = createAuthMiddleware({
-            jwtLib: jwt,
-            jwtSecret: process.env.JWT_SECRET,
-        });
+        const userController = new UserController(this.core.userCore);
 
         // routers
         const authRouter = createAuthRouter(authController);
-        const calendarRouter = createCalendarRouter(calendarController, authMiddleware);
-        const eventRouter = createEventRouter(eventController, authMiddleware);
+        const calendarRouter = createCalendarRouter(calendarController);
+        const eventRouter = createEventRouter(eventController);
+        const userRouter = createUserRouter(userController);
 
         service.get('/ping', (req, res) => {
             res.status(200).json({ status: 'ok', message: 'pong!' });
         });
-        service.use('/api/auth', authRouter);
-        service.use('/api/calendars', calendarRouter);
-        service.use('/api/calendars', eventRouter);
+        service.use(
+            '/api/auth', authRouter,
+        );
+        service.use(
+            '/api/calendars', calendarRouter,
+        );
+        service.use(
+            '/api/calendars', eventRouter,
+        );
+        service.use(
+            '/api/users', userRouter,
+        );
         service.use(errorRendererMiddleware);
 
         service.listen(port, () => {

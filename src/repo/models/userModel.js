@@ -2,21 +2,20 @@ import mongoose from 'mongoose';
 
 export const userSchema = new mongoose.Schema(
     {
+        email: { type: String, required: true, lowercase: true, trim: true },
         secret: {
-            email: { type: String, required: true, lowercase: true, trim: true },
             emailVerified: { type: Boolean, required: true, default: false },
             passwordHash: { type: String, required: true, select: false },
         },
         name: { type: String },
         avatar: { type: String },
-        tz: { type: String },
-        locale: { type: String },
+        country: { type: String }, //ISO code A-2 format
     },
     { timestamps: true }
 );
 
 userSchema.index(
-    { "secret.email": 1 },
+    { email: 1 },
     { unique: true, collation: { locale: 'en', strength: 2 } }
 );
 
