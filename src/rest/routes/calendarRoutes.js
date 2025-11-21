@@ -1,28 +1,47 @@
 import { Router } from "express";
+import authMiddleware from "../middlewares/authMiddleware.js";
 
-export default function createCalendarRouter(calendarController, authMiddleware) {
+export default function createCalendarRouter(calendarController) {
     const router = Router();
 
-    router.use(authMiddleware);
-
-    router.get("/", (req, res, next) =>
-        calendarController.listMineCalendars(req, res, next)
+    router.get(
+        "/",
+        authMiddleware,
+        async (req, res, next) => {
+            await calendarController.listMineCalendars(req, res, next)
+        }
     );
 
-    router.post("/", (req, res, next) =>
-        calendarController.createCalendar(req, res, next)
+    router.post(
+        "/",
+        authMiddleware,
+        async (req, res, next) => {
+            await calendarController.createCalendar(req, res, next)
+        }
     );
 
-    router.get("/:calendarId", (req, res, next) =>
-        calendarController.getCalendar(req, res, next)
+    router.get(
+        "/:calendarId",
+        authMiddleware,
+        async(req, res, next) => {
+            await calendarController.getCalendar(req, res, next)
+        }
     );
 
-    router.patch("/:calendarId", (req, res, next) =>
-        calendarController.updateCalendar(req, res, next)
+    router.patch(
+        "/:calendarId",
+        authMiddleware,
+        async (req, res, next) => {
+            await calendarController.updateCalendar(req, res, next)
+        }
     );
 
-    router.delete("/:calendarId", (req, res, next) =>
-        calendarController.deleteCalendar(req, res, next)
+    router.delete(
+        "/:calendarId",
+        authMiddleware,
+        async (req, res, next) => {
+            await calendarController.deleteCalendar(req, res, next)
+        }
     );
 
     return router;

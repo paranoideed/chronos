@@ -66,7 +66,7 @@ export default class UserCore {
         };
     }
 
-    async updateAvatar(userId, avatar) {
+    async updateUserAvatar(userId, avatar) {
         const user = await this.getUserById(userId);
         if (!user) {
             throw new UserNotFoundError("User not found");
@@ -74,14 +74,16 @@ export default class UserCore {
 
         const { url: newAvatarUrl } = await this.bucket.putUserAvatar(
             userId,
-            avatar,
+            avatar.buffer,
             avatar.mimetype
         );
 
         const upd = await this.repo.users().findOneAndUpdate(
             { _id: asObjId(userId) },
-            { $set: { avatar } },
-        )
+            { $set: { avatar: newAvatarUrl } },
+            { new: true }
+        );
+
         if (!upd) {
             throw new UserNotFoundError("User not found");
         }
@@ -90,7 +92,7 @@ export default class UserCore {
             id: upd._id,
             name: upd.name,
             email: upd.email,
-            avatar: upd.avatar,
+            avatar: upd.avatar
         };
     }
 }

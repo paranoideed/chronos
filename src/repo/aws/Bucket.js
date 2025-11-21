@@ -5,7 +5,7 @@ import {
 } from "@aws-sdk/client-s3";
 
 export class Bucket {
-    S3Client;
+    s3;
     bucketName;
     publicBase;
 
@@ -16,36 +16,38 @@ export class Bucket {
         secretAccessKey,
     }) {
         this.bucketName = bucketName;
-        this.publicBase = bucketName;
+        this.publicBase = `https://${bucketName}.s3.${region}.amazonaws.com`;
 
-        this.S3Client = new S3Client({
-            region: region,
+        this.s3 = new S3Client({
+            region,
             credentials: {
-                accessKeyId:     accessKeyId,
-                secretAccessKey: secretAccessKey,
+                accessKeyId,
+                secretAccessKey,
             },
-            publicBase: `https://${bucketName}.s3.${region}.amazonaws.com`,
-        })
+        });
     }
 
     async putUserAvatar(userId, data, contentType) {
         const key = `user/${userId}/avatar_${Date.now()}`;
 
-        await this.S3Client.send(new PutObjectCommand({
+        const body = Buffer.isBuffer(data) ? data : Buffer.from(data);
+
+        await this.s3.send(new PutObjectCommand({
             Bucket: this.bucketName,
             Key: key,
-            Body: data,
-            ContentType: contentType,
+            Body: body,
+            ContentType: contentType || "application/octet-stream",
+            ContentLength: body.length,
             CacheControl: "public, max-age=31536000, immutable",
         }));
 
-        const url = `${this}/${key}`;
+        const url = `${this.publicBase}/${key}`;
         return { key, url };
     }
 
     async deleteS3Object(key) {
         try {
-            await this.S3Client.send(new DeleteObjectCommand({
+            await this.s3.send(new DeleteObjectCommand({
                 Bucket: this.bucketName,
                 Key: key,
             }));
@@ -61,5 +63,3 @@ export class Bucket {
         return url.substring(this.publicBase.length + 1);
     }
 }
-
-

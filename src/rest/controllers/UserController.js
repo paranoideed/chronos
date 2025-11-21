@@ -86,21 +86,19 @@ export default class UserController {
     }
 
     async updateUserAvatar(req, res, next) {
-        if (req.user.id != null) {
+        try {
             const user = await this.userService.getUserById(req.user.id);
             if (!user) {
                 return res.status(401).send("User not found");
             }
-        }
 
-        const parsed = updateUserAvatarSchema.safeParse(req.file);
-        if (!parsed) {
-            return res.status(400).send("Validation error: ", parsed.error);
-        }
+            const parsed = updateUserAvatarSchema.safeParse({ avatar: req.file });
+            if (!parsed.success) {
+                return res.status(400).json(parsed.error);
+            }
 
-        try {
-            const user = await this.userService.updateUserAvatar(req.user.id, req.body.avatar);
-            return res.status(200).send(user);
+            const updated = await this.userService.updateUserAvatar(req.user.id, req.file);
+            return res.status(200).send(updated);
         } catch (error) {
             console.log("Error updating user", error);
             next(error);
