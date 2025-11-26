@@ -1,9 +1,14 @@
 import mongoose from "mongoose";
 import crypto from "crypto";
 
-import {TokenInvalidOrExpiredError, TokenTypeMismatchError, UserNotFoundError} from "../core/errors/errors.js";
+import {
+    TokenInvalidOrExpiredError,
+    TokenTypeMismatchError,
+    UserNotFoundError,
+} from "../core/errors/errors.js";
 
-export const toHash = (raw) => crypto.createHash("sha256").update(raw).digest("hex");
+export const toHash = (raw) =>
+    crypto.createHash("sha256").update(raw).digest("hex");
 
 export default class Approver {
     repo;
@@ -56,7 +61,7 @@ export default class Approver {
             .approvalTokens()
             .findOne({
                 userId: new mongoose.Types.ObjectId(userId),
-                type:   type,
+                type: type,
             })
             .sort({ createdAt: -1 })
             .lean();
@@ -74,7 +79,19 @@ export default class Approver {
         return user;
     }
 
+    async approveCalendarInvite(rawToken) {
+        const rec = await this.useApprovalToken(rawToken, "calendar_invite");
+        return rec;
+    }
+
     async sendEmailVerification(to, rawToken) {
         return await this.mailer.sendEmailVerification(to, rawToken);
+    }
+
+    async sendCalendarInvite(to, rawToken, { calendarName, role }) {
+        return await this.mailer.sendCalendarInvite(to, rawToken, {
+            calendarName,
+            role,
+        });
     }
 }

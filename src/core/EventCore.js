@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import {EventNotFoundError, ForbiddenError} from "./errors/errors.js";
-import {ReminderEvent, TaskEvent} from "../repo/models/eventModel.js";
+import {ReminderEvent, TaskEvent, ArrangementEvent} from "../repo/models/eventModel.js";
 
 const asObjId = (id) => new mongoose.Types.ObjectId(id);
 
@@ -16,6 +16,7 @@ export default class EventCore {
     };
 
     pickTypeModel(type) {
+        if (type === "arrangement")  return ArrangementEvent;
         if (type === "reminder") return ReminderEvent;
         if (type === "task") return TaskEvent;
         return this.repo.events();
@@ -115,7 +116,7 @@ export default class EventCore {
             description: description,
         };
 
-        if (type === "meeting") {
+        if (type === "arrangement") {
             Object.assign(payload, {
                 allDay: !!allDay,
                 startAt: startAt,

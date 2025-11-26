@@ -4,9 +4,10 @@ import {
     InvalidCredentialsError,
     UserAlreadyExistsError,
 } from "./errors/errors.js";
-import mongoose from "mongoose";
-import crypto from "crypto";
-import {toHash} from "../approvaler/Approver.js";
+// import mongoose from "mongoose";
+// import crypto from "crypto";
+// import {toHash} from "../approvaler/Approver.js";
+import { mintSingleUseToken } from "../approvaler/tokenUtils.js";
 
 const deriveNameFromEmail = (email) => {
     const local = email.split("@")[0] || "";
@@ -62,7 +63,8 @@ export default class AuthCore {
 
         const ttl = Number(process.env.EMAIL_VERIFY_TTL_MIN || 60);
 
-        const rawToken = await this.mintSingleUseToken({
+        const rawToken = await mintSingleUseToken({
+            repo: this.repo,
             userId: user._id,
             type: "email_verify",
             ttlMinutes: ttl,
@@ -95,33 +97,6 @@ export default class AuthCore {
             token: generateToken(user.id),
             user: user.toJSON(),
         };
-    }
-
-    async mintSingleUseToken({ userId, type, ttlMinutes = 60, meta = null }) {
-        await this.repo.approvalTokens().updateMany(
-            {
-                userId: new mongoose.Types.ObjectId(userId),
-                type,
-                used: false,
-                expiresAt: { $gt: new Date() },
-            },
-            { $set: { used: true } }
-        );
-
-        const raw = crypto.randomBytes(32).toString("hex");
-        const hash = toHash(raw);
-        const expiresAt = new Date(Date.now() + ttlMinutes * 60 * 1000);
-
-        await this.repo.approvalTokens().create({
-            tokenHash: hash,
-            userId: userId,
-            type: type,
-            meta: meta,
-            used: false,
-            expiresAt: expiresAt,
-        });
-
-        return raw;
     }
 
     async verifyEmailByToken(rawToken) {

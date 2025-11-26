@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const EVENT_TYPES = ["meeting", "reminder", "task"];
+const EVENT_TYPES = ["arrangement", "reminder", "task"];
 
 const isoDate = z.preprocess(
     (v) => (typeof v === "string" || v instanceof Date ? new Date(v) : v),

@@ -23,7 +23,10 @@ export default class Mailer {
             process.env.FRONTEND_BASE_URL ||
             process.env.PUBLIC_BASE_URL ||
             process.env.APP_BASE_URL;
-        const url = `${base?.replace(/\/+$/, "")}/verify-email?token=${rawToken}`;
+        const url = `${base?.replace(
+            /\/+$/,
+            ""
+        )}/verify-email?token=${rawToken}`;
 
         const html = `
             <h2>Email Verification</h2>
@@ -35,6 +38,37 @@ export default class Mailer {
             to,
             from: this.from,
             subject: "Email Verification",
+            html,
+        });
+    }
+
+    async sendCalendarInvite(to, rawToken, { calendarName, role }) {
+        const ttl = Number(
+            process.env.CALENDAR_INVITE_TTL_MIN ||
+                process.env.EMAIL_VERIFY_TTL_MIN ||
+                1440
+        );
+
+        const baseUrl =
+            process.env.FRONTEND_BASE_URL ||
+            process.env.PUBLIC_BASE_URL ||
+            process.env.APP_BASE_URL;
+
+        const normalizedBase = (baseUrl || "").replace(/\/+$/, "");
+        const url = `${normalizedBase}/calendar-invite?token=${rawToken}`;
+
+        const html = `
+            <h2>Calendar invitation</h2>
+            <p>You have been invited to join the calendar <b>${calendarName}</b> as <b>${role}</b>.</p>
+            <p>To accept the invitation, click the link below:</p>
+            <p><a href="${url}">${url}</a></p>
+            <p>The link is valid for ${ttl} minutes.</p>
+        `;
+
+        await this.transporter.sendMail({
+            to,
+            from: this.from,
+            subject: "Calendar invitation",
             html,
         });
     }
