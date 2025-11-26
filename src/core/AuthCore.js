@@ -68,6 +68,8 @@ export default class AuthCore {
             ttlMinutes: ttl,
         });
 
+        await this.approver.sendEmailVerification(user.email, rawToken);
+
         return user.toJSON()
     }
 
@@ -120,5 +122,9 @@ export default class AuthCore {
         });
 
         return raw;
+    }
+
+    async verifyEmailByToken(rawToken) {
+        return await this.approver.verifyEmail(rawToken);
     }
 }
