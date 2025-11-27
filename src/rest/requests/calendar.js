@@ -24,6 +24,15 @@ export const updateCalendarBodySchema = z.object({
     color: z.string().trim().max(32).optional(),
 });
 
+export const inviteCalendarMemberBodySchema = z.object({
+    email: z.string().email().max(255),
+    role: z.enum(["viewer", "editor"]).default("viewer"),
+});
+
+export const acceptCalendarInviteQuerySchema = z.object({
+    token: z.string().min(1, "Token is required"),
+});
+
 export const createCalendarSchema = z.object({
     body: createCalendarBodySchema,
 });
@@ -43,4 +52,13 @@ export const updateCalendarSchema = z.object({
 
 export const deleteCalendarSchema = z.object({
     params: calendarIdParamSchema,
+});
+
+export const inviteCalendarMemberSchema = z.object({
+    params: calendarIdParamSchema,
+    body: inviteCalendarMemberBodySchema,
+});
+
+export const acceptCalendarInviteSchema = z.object({
+    query: acceptCalendarInviteQuerySchema,
 });

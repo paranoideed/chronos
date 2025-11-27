@@ -5,6 +5,8 @@ import {
     getCalendarSchema,
     updateCalendarSchema,
     deleteCalendarSchema,
+    inviteCalendarMemberSchema,
+    acceptCalendarInviteSchema,
 } from "../requests/calendar.js";
 
 export default class CalendarController {
@@ -139,6 +141,67 @@ export default class CalendarController {
             res.status(204).send();
         } catch (err) {
             console.error("Deleting calendar error:", err);
+            next(err);
+        }
+    }
+
+    async inviteToCalendar(req, res, next) {
+        const parsed = inviteCalendarMemberSchema.safeParse({
+            params: req.params,
+            body: req.body,
+        });
+
+        if (!parsed.success) {
+            console.log("Invite to calendar validation error:", parsed.error);
+            return res.status(400).json(z.treeifyError(parsed.error));
+        }
+
+        const { params, body } = parsed.data;
+
+        try {
+            const result = await this.core.inviteMemberByEmail(
+                req.user.id,
+                params.calendarId,
+                {
+                    email: body.email,
+                    role: body.role,
+                }
+            );
+
+            return res.status(201).json({
+                email: result.email,
+                role: result.role,
+            });
+        } catch (err) {
+            console.error("Invite to calendar error:", err);
+            next(err);
+        }
+    }
+
+    async acceptCalendarInvite(req, res, next) {
+        const parsed = acceptCalendarInviteSchema.safeParse({
+            query: req.query,
+        });
+
+        if (!parsed.success) {
+            console.log(
+                "Accept calendar invite validation error:",
+                parsed.error
+            );
+            return res.status(400).json(z.treeifyError(parsed.error));
+        }
+
+        const { query } = parsed.data;
+
+        try {
+            const data = await this.core.acceptInviteByToken(
+                req.user.id,
+                query.token
+            );
+
+            return res.status(200).json(data);
+        } catch (err) {
+            console.error("Accept calendar invite error:", err);
             next(err);
         }
     }

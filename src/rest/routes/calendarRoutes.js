@@ -8,7 +8,7 @@ export default function createCalendarRouter(calendarController) {
         "/",
         authMiddleware,
         async (req, res, next) => {
-            await calendarController.listMineCalendars(req, res, next)
+            await calendarController.listMineCalendars(req, res, next);
         }
     );
 
@@ -16,7 +16,23 @@ export default function createCalendarRouter(calendarController) {
         "/",
         authMiddleware,
         async (req, res, next) => {
-            await calendarController.createCalendar(req, res, next)
+            await calendarController.createCalendar(req, res, next);
+        }
+    );
+
+    router.get(
+        "/accept-invite",
+        authMiddleware,
+        async (req, res, next) => {
+            await calendarController.acceptCalendarInvite(req, res, next);
+        }
+    );
+
+    router.post(
+        "/:calendarId/invite",
+        authMiddleware,
+        async (req, res, next) => {
+            await calendarController.inviteToCalendar(req, res, next);
         }
     );
 
@@ -24,7 +40,7 @@ export default function createCalendarRouter(calendarController) {
         "/:calendarId",
         authMiddleware,
         async(req, res, next) => {
-            await calendarController.getCalendar(req, res, next)
+            await calendarController.getCalendar(req, res, next);
         }
     );
 
@@ -32,7 +48,7 @@ export default function createCalendarRouter(calendarController) {
         "/:calendarId",
         authMiddleware,
         async (req, res, next) => {
-            await calendarController.updateCalendar(req, res, next)
+            await calendarController.updateCalendar(req, res, next);
         }
     );
 
@@ -40,7 +56,7 @@ export default function createCalendarRouter(calendarController) {
         "/:calendarId",
         authMiddleware,
         async (req, res, next) => {
-            await calendarController.deleteCalendar(req, res, next)
+            await calendarController.deleteCalendar(req, res, next);
         }
     );
 
