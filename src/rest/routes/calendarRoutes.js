@@ -37,6 +37,30 @@ export default function createCalendarRouter(calendarController) {
     );
 
     router.get(
+        "/:calendarId/members",
+        authMiddleware,
+        async (req, res, next) => {
+            await calendarController.listCalendarMembers(req, res, next);
+        }
+    );
+
+    router.patch(
+        "/:calendarId/members/:userId",
+        authMiddleware,
+        async (req, res, next) => {
+            await calendarController.updateCalendarMemberRole(req, res, next);
+        }
+    );
+
+    router.delete(
+        "/:calendarId/members/:userId",
+        authMiddleware,
+        async (req, res, next) => {
+            await calendarController.removeCalendarMember(req, res, next);
+        }
+    );
+
+    router.get(
         "/:calendarId",
         authMiddleware,
         async(req, res, next) => {

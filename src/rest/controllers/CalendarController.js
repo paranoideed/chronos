@@ -7,6 +7,9 @@ import {
     deleteCalendarSchema,
     inviteCalendarMemberSchema,
     acceptCalendarInviteSchema,
+    listCalendarMembersSchema,
+    updateCalendarMemberRoleSchema,
+    removeCalendarMemberSchema,
 } from "../requests/calendar.js";
 
 export default class CalendarController {
@@ -202,6 +205,99 @@ export default class CalendarController {
             return res.status(200).json(data);
         } catch (err) {
             console.error("Accept calendar invite error:", err);
+            next(err);
+        }
+    }
+
+    async listCalendarMembers(req, res, next) {
+        const parsed = listCalendarMembersSchema.safeParse({
+            params: req.params,
+            query: req.query,
+            body: req.body,
+        });
+
+        if (!parsed.success) {
+            console.log(
+                "List calendar members validation error:",
+                parsed.error.issues
+            );
+            return res.status(400).json(z.treeifyError(parsed.error));
+        }
+
+        const { params } = parsed.data;
+
+        try {
+            const members = await this.core.listMembers(
+                req.user.id,
+                params.calendarId
+            );
+
+            return res.status(200).json({ members });
+        } catch (err) {
+            console.error("List calendar members error:", err);
+            next(err);
+        }
+    }
+
+    async updateCalendarMemberRole(req, res, next) {
+        const parsed = updateCalendarMemberRoleSchema.safeParse({
+            params: req.params,
+            query: req.query,
+            body: req.body,
+        });
+
+        if (!parsed.success) {
+            console.log(
+                "Update calendar member role validation error:",
+                parsed.error.issues
+            );
+            return res.status(400).json(z.treeifyError(parsed.error));
+        }
+
+        const { params, body } = parsed.data;
+
+        try {
+            const member = await this.core.updateMemberRole(
+                req.user.id,
+                params.calendarId,
+                params.userId,
+                body.role
+            );
+
+            return res.status(200).json({ member });
+        } catch (err) {
+            console.error("Update calendar member role error:", err);
+            next(err);
+        }
+    }
+
+    async removeCalendarMember(req, res, next) {
+        const parsed = removeCalendarMemberSchema.safeParse({
+            params: req.params,
+            query: req.query,
+            body: req.body,
+        });
+
+        if (!parsed.success) {
+            console.log(
+                "Remove calendar member validation error:",
+                parsed.error.issues
+            );
+            return res.status(400).json(z.treeifyError(parsed.error));
+        }
+
+        const { params } = parsed.data;
+
+        try {
+            await this.core.removeMember(
+                req.user.id,
+                params.calendarId,
+                params.userId
+            );
+
+            return res.status(204).send();
+        } catch (err) {
+            console.error("Remove calendar member error:", err);
             next(err);
         }
     }

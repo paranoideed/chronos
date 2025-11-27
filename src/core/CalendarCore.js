@@ -3,7 +3,7 @@ import {
     CalendarNotFoundError,
     ForbiddenError,
     PrimaryCalendarExistsError,
-    UserNotFoundError
+    UserNotFoundError,
 } from "./errors/errors.js";
 import { mintSingleUseToken } from "../approvaler/tokenUtils.js";
 
@@ -271,5 +271,124 @@ export default class CalendarCore {
             },
             role,
         };
+    }
+
+    async listMembers(currentUserId, calendarId) {
+        await this.ensureMember(calendarId, currentUserId);
+
+        const members = await this.repo
+            .calendarMembers()
+            .find({
+                calendarId: asObjId(calendarId),
+            })
+            .populate("userId")
+            .lean();
+
+        return members.map((m) => ({
+            role: m.role,
+            status: m.status,
+            joinedAt: m.createdAt,
+            user: m.userId
+                ? {
+                      id: String(m.userId._id),
+                      email: m.userId.email,
+                      name: m.userId.name,
+                      avatar: m.userId.avatar,
+                  }
+                : null,
+        }));
+    }
+
+    async updateMemberRole(currentUserId, calendarId, targetUserId, role) {
+        const currentMember = await this.ensureMember(
+            calendarId,
+            currentUserId
+        );
+        this.ensureRole(currentMember, ["owner"]);
+
+        if (!["viewer", "editor"].includes(role)) {
+            throw new ForbiddenError("Invalid role");
+        }
+
+        const member = await this.repo
+            .calendarMembers()
+            .findOneAndUpdate(
+                {
+                    calendarId: asObjId(calendarId),
+                    userId: asObjId(targetUserId),
+                    status: "accepted",
+                },
+                {
+                    $set: { role },
+                },
+                { new: true }
+            )
+            .populate("userId")
+            .lean();
+
+        if (!member) {
+            throw new UserNotFoundError("Member not found in this calendar");
+        }
+
+        return {
+            role: member.role,
+            status: member.status,
+            user: member.userId
+                ? {
+                      id: String(member.userId._id),
+                      email: member.userId.email,
+                      name: member.userId.name,
+                      avatar: member.userId.avatar,
+                  }
+                : null,
+        };
+    }
+
+    async removeMember(currentUserId, calendarId, targetUserId) {
+        const currentMember = await this.ensureMember(
+            calendarId,
+            currentUserId
+        );
+
+        const selfRemove = String(currentUserId) === String(targetUserId);
+
+        if (!selfRemove) {
+            this.ensureRole(currentMember, ["owner"]);
+        }
+
+        const targetMember = await this.repo
+            .calendarMembers()
+            .findOne({
+                calendarId: asObjId(calendarId),
+                userId: asObjId(targetUserId),
+            })
+            .lean();
+
+        if (!targetMember) {
+            throw new UserNotFoundError("Member not found in this calendar");
+        }
+
+        if (targetMember.role === "owner") {
+            const ownerCount = await this.repo
+                .calendarMembers()
+                .countDocuments({
+                    calendarId: asObjId(calendarId),
+                    role: "owner",
+                    status: "accepted",
+                });
+
+            if (ownerCount <= 1) {
+                throw new ForbiddenError(
+                    "Cannot remove the last owner of the calendar"
+                );
+            }
+        }
+
+        await this.repo.calendarMembers().deleteOne({
+            calendarId: asObjId(calendarId),
+            userId: asObjId(targetUserId),
+        });
+
+        return true;
     }
 }

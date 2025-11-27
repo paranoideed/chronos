@@ -13,6 +13,11 @@ export const calendarIdParamSchema = z.object({
     calendarId: z.string(),
 });
 
+export const calendarMemberParamsSchema = z.object({
+    calendarId: z.string(),
+    userId: z.string(),
+});
+
 export const listMyCalendarsQuerySchema = z.object({
     page: z.coerce.number().int().min(1).optional(),
     limit: z.coerce.number().int().min(1).max(100).optional(),
@@ -61,4 +66,21 @@ export const inviteCalendarMemberSchema = z.object({
 
 export const acceptCalendarInviteSchema = z.object({
     query: acceptCalendarInviteQuerySchema,
+});
+
+export const listCalendarMembersSchema = z.object({
+    params: calendarIdParamSchema,
+});
+
+export const updateCalendarMemberRoleBodySchema = z.object({
+    role: z.enum(["viewer", "editor"]),
+});
+
+export const updateCalendarMemberRoleSchema = z.object({
+    params: calendarMemberParamsSchema,
+    body: updateCalendarMemberRoleBodySchema,
+});
+
+export const removeCalendarMemberSchema = z.object({
+    params: calendarMemberParamsSchema,
 });
