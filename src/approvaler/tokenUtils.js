@@ -9,15 +9,20 @@ export async function mintSingleUseToken({
     ttlMinutes = 60,
     meta = null,
 }) {
-    await repo.approvalTokens().updateMany(
-        {
-            userId: new mongoose.Types.ObjectId(userId),
-            type,
-            used: false,
-            expiresAt: { $gt: new Date() },
-        },
-        { $set: { used: true } }
-    );
+    const baseFilter = {
+        userId: new mongoose.Types.ObjectId(userId),
+        type,
+        used: false,
+        expiresAt: { $gt: new Date() },
+    };
+
+    if (type === "calendar_invite" && meta?.calendarId) {
+        baseFilter["meta.calendarId"] = meta.calendarId;
+    }
+
+    await repo.approvalTokens().updateMany(baseFilter, {
+        $set: { used: true },
+    });
 
     const raw = crypto.randomBytes(32).toString("hex");
     const hash = toHash(raw);
@@ -25,11 +30,11 @@ export async function mintSingleUseToken({
 
     await repo.approvalTokens().create({
         tokenHash: hash,
-        userId: userId,
-        type: type,
-        meta: meta,
+        userId,
+        type,
+        meta,
         used: false,
-        expiresAt: expiresAt,
+        expiresAt,
     });
 
     return raw;
