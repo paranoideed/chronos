@@ -28,6 +28,14 @@ export default function createCalendarRouter(calendarController) {
         }
     );
 
+    router.get(
+        "/decline-invite",
+        authMiddleware,
+        async (req, res, next) => {
+            await calendarController.declineCalendarInvite(req, res, next);
+        }
+    );
+
     router.post(
         "/:calendarId/invite",
         authMiddleware,

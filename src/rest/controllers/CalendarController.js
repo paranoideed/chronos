@@ -209,6 +209,34 @@ export default class CalendarController {
         }
     }
 
+    async declineCalendarInvite(req, res, next) {
+        const parsed = acceptCalendarInviteSchema.safeParse({
+            query: req.query,
+        });
+
+        if (!parsed.success) {
+            console.log(
+                "Decline calendar invite validation error:",
+                parsed.error
+            );
+            return res.status(400).json(z.treeifyError(parsed.error));
+        }
+
+        const { query } = parsed.data;
+
+        try {
+            const data = await this.core.declineInviteByToken(
+                req.user.id,
+                query.token
+            );
+
+            return res.status(200).json(data);
+        } catch (err) {
+            console.error("Decline calendar invite error:", err);
+            next(err);
+        }
+    }
+
     async listCalendarMembers(req, res, next) {
         const parsed = listCalendarMembersSchema.safeParse({
             params: req.params,

@@ -44,9 +44,7 @@ export default class Mailer {
 
     async sendCalendarInvite(to, rawToken, { calendarName, role }) {
         const ttl = Number(
-            process.env.CALENDAR_INVITE_TTL_MIN ||
-                process.env.EMAIL_VERIFY_TTL_MIN ||
-                1440
+            process.env.CALENDAR_INVITE_TTL_MIN || 10080 // 7 days
         );
 
         const baseUrl =
@@ -55,14 +53,46 @@ export default class Mailer {
             process.env.APP_BASE_URL;
 
         const normalizedBase = (baseUrl || "").replace(/\/+$/, "");
-        const url = `${normalizedBase}/calendar-invite?token=${rawToken}`;
+        const acceptUrl = `${normalizedBase}/calendar-invite/accept?token=${rawToken}`;
+        const declineUrl = `${normalizedBase}/calendar-invite/decline?token=${rawToken}`;
 
         const html = `
             <h2>Calendar invitation</h2>
             <p>You have been invited to join the calendar <b>${calendarName}</b> as <b>${role}</b>.</p>
-            <p>To accept the invitation, click the link below:</p>
-            <p><a href="${url}">${url}</a></p>
-            <p>The link is valid for ${ttl} minutes.</p>
+            
+            <p>Please choose one option:</p>
+
+            <p>
+                <a href="${acceptUrl}" 
+                style="
+                    display:inline-block;
+                    padding:10px 18px;
+                    background:#4caf50;
+                    color:#fff;
+                    text-decoration:none;
+                    border-radius:6px;
+                    font-weight:bold;
+                ">
+                Accept invitation
+                </a>
+            </p>
+
+            <p>
+                <a href="${declineUrl}" 
+                style="
+                    display:inline-block;
+                    padding:10px 18px;
+                    background:#d9534f;
+                    color:#fff;
+                    text-decoration:none;
+                    border-radius:6px;
+                    font-weight:bold;
+                ">
+                Decline invitation
+                </a>
+            </p>
+
+            <p>The links are valid for ${ttl} minutes.</p>
         `;
 
         await this.transporter.sendMail({

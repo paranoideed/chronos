@@ -192,10 +192,45 @@ export default class CalendarCore {
             userId: user._id,
         });
 
-        if (existingMember && existingMember.status === "accepted") {
-            throw new ForbiddenError(
-                "User is already a member of this calendar"
-            );
+        if (existingMember) {
+            if (existingMember.status === "accepted") {
+                throw new ForbiddenError(
+                    "User is already a member of this calendar"
+                );
+            }
+
+            if (existingMember.status === "pending") {
+                if (existingMember.role === role) {
+                    throw new ForbiddenError(
+                        "User already has a pending invite to this calendar"
+                    );
+                }
+                // update role for pending
+                await this.repo
+                    .calendarMembers()
+                    .updateOne(
+                        { _id: existingMember._id },
+                        { $set: { role, status: "pending" } }
+                    );
+            }
+
+            // re-invite user who declined
+            if (existingMember.status === "declined") {
+                await this.repo
+                    .calendarMembers()
+                    .updateOne(
+                        { _id: existingMember._id },
+                        { $set: { role, status: "pending" } }
+                    );
+            }
+        } else {
+            // invite new user
+            await this.repo.calendarMembers().create({
+                calendarId: calendar._id,
+                userId: user._id,
+                role,
+                status: "pending",
+            });
         }
 
         const ttl = Number(
@@ -249,18 +284,23 @@ export default class CalendarCore {
             throw new CalendarNotFoundError();
         }
 
+        const member = await this.repo.calendarMembers().findOne({
+            calendarId: calendar._id,
+            userId: tokenRec.userId,
+        });
+
+        if (!member) {
+            throw new ForbiddenError("No pending invite found for this user");
+        }
+
         await this.repo.calendarMembers().updateOne(
-            {
-                calendarId: calendar._id,
-                userId: tokenRec.userId,
-            },
+            { _id: member._id },
             {
                 $set: {
                     role,
                     status: "accepted",
                 },
-            },
-            { upsert: true }
+            }
         );
 
         return {
@@ -273,14 +313,69 @@ export default class CalendarCore {
         };
     }
 
+    async declineInviteByToken(currentUserId, rawToken) {
+        const tokenRec = await this.approver.approveCalendarInvite(rawToken);
+
+        if (String(tokenRec.userId) !== String(currentUserId)) {
+            throw new ForbiddenError("Token does not belong to this user");
+        }
+
+        const { calendarId, role } = tokenRec.meta || {};
+
+        if (!calendarId || !role) {
+            throw new ForbiddenError("Invalid calendar invite token");
+        }
+
+        const calendar = await this.repo
+            .calendars()
+            .findById(calendarId)
+            .lean();
+
+        if (!calendar) {
+            throw new CalendarNotFoundError();
+        }
+
+        const member = await this.repo.calendarMembers().findOne({
+            calendarId: calendar._id,
+            userId: tokenRec.userId,
+        });
+
+        if (!member) {
+            throw new ForbiddenError("No pending invite found for this user");
+        }
+
+        if (member.status === "accepted") {
+            throw new ForbiddenError("Invite has already been accepted");
+        }
+
+        await this.repo.calendarMembers().updateOne(
+            { _id: member._id },
+            {
+                $set: {
+                    status: "declined",
+                },
+            }
+        );
+
+        return {
+            success: true,
+        };
+    }
+
     async listMembers(currentUserId, calendarId) {
-        await this.ensureMember(calendarId, currentUserId);
+        const currentMember = await this.ensureMember(calendarId, currentUserId);
+
+        const query = {
+            calendarId: asObjId(calendarId),
+        };
+
+        if (currentMember.role !== "owner") {
+            query.status = "accepted";
+        }
 
         const members = await this.repo
             .calendarMembers()
-            .find({
-                calendarId: asObjId(calendarId),
-            })
+            .find(query)
             .populate("userId")
             .lean();
 
@@ -310,13 +405,44 @@ export default class CalendarCore {
             throw new ForbiddenError("Invalid role");
         }
 
-        const member = await this.repo
+        const calendarObjectId = asObjId(calendarId);
+        const targetObjectId = asObjId(targetUserId);
+
+        const existingMember = await this.repo
+            .calendarMembers()
+            .findOne({
+                calendarId: calendarObjectId,
+                userId: targetObjectId,
+                status: "accepted",
+            })
+            .populate("userId")
+            .lean();
+
+        if (!existingMember) {
+            throw new UserNotFoundError("Member not found in this calendar");
+        }
+
+        if (existingMember.role === "owner") {
+            const ownerCount = await this.repo
+                .calendarMembers()
+                .countDocuments({
+                    calendarId: calendarObjectId,
+                    role: "owner",
+                    status: "accepted",
+                });
+
+            if (ownerCount <= 1) {
+                throw new ForbiddenError(
+                    "Cannot change role of the last owner of the calendar"
+                );
+            }
+        }
+
+        const updated = await this.repo
             .calendarMembers()
             .findOneAndUpdate(
                 {
-                    calendarId: asObjId(calendarId),
-                    userId: asObjId(targetUserId),
-                    status: "accepted",
+                    _id: existingMember._id,
                 },
                 {
                     $set: { role },
@@ -326,19 +452,15 @@ export default class CalendarCore {
             .populate("userId")
             .lean();
 
-        if (!member) {
-            throw new UserNotFoundError("Member not found in this calendar");
-        }
-
         return {
-            role: member.role,
-            status: member.status,
-            user: member.userId
+            role: updated.role,
+            status: updated.status,
+            user: updated.userId
                 ? {
-                      id: String(member.userId._id),
-                      email: member.userId.email,
-                      name: member.userId.name,
-                      avatar: member.userId.avatar,
+                      id: String(updated.userId._id),
+                      email: updated.userId.email,
+                      name: updated.userId.name,
+                      avatar: updated.userId.avatar,
                   }
                 : null,
         };
