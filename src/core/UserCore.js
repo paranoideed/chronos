@@ -2,7 +2,7 @@ import {UserNotFoundError} from "./errors/errors.js";
 import mongoose from "mongoose";
 import {updateUserAvatarSchema} from "../rest/requests/user.js";
 
-const asObjId = (id) => new mongoose.Types.ObjectId(id);
+export const asObjId = (id) => new mongoose.Types.ObjectId(id);
 
 export default class UserCore {
     repo;

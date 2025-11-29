@@ -1,4 +1,5 @@
 import { Router } from "express";
+import authMiddleware from "../middlewares/authMiddleware.js";
 
 export default function createAuthRouter(authController) {
     const router = Router();
@@ -23,6 +24,14 @@ export default function createAuthRouter(authController) {
             await authController.verifyEmail(req, res, next)
         }
     );
+
+    router.delete(
+        "/",
+        authMiddleware,
+        async (req, res, next) => {
+            await authController.deleteUser(req, res, next)
+        }
+    )
 
     return router;
 }

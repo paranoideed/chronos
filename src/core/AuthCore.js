@@ -8,6 +8,8 @@ import {
 // import crypto from "crypto";
 // import {toHash} from "../approvaler/Approver.js";
 import { mintSingleUseToken } from "../approvaler/tokenUtils.js";
+import {email} from "zod";
+import {asObjId} from "./UserCore.js";
 
 const deriveNameFromEmail = (email) => {
     const local = email.split("@")[0] || "";
@@ -97,6 +99,10 @@ export default class AuthCore {
             token: generateToken(user.id),
             user: user.toJSON(),
         };
+    }
+
+    async deleteUser(id) {
+        await this.repo.users().deleteOne({ _id: asObjId(id) })
     }
 
     async verifyEmailByToken(rawToken) {
