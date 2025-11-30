@@ -18,10 +18,10 @@ export const createEventSchema = z.object({
     }),
     body: z.object({
             type: z.enum(EVENT_TYPES),
+            color: z.string().trim().max(50).optional(),
             allDay: z.boolean().optional(),
             startAt: isoDate.optional(),
             endAt: isoDate.optional(),
-            location: z.string().trim().max(500).optional(),
             remindAt: isoDate.optional(),
             dueAt: isoDate.optional(),
             isDone: z.boolean().optional(),
@@ -81,10 +81,10 @@ export const updateEventSchema = z.object({
         .object({
             title: z.string().trim().min(1).max(200).optional(),
             description: z.string().trim().max(5000).optional(),
+            color: z.string().trim().max(50).optional(),
             allDay: z.boolean().optional(),
             startAt: isoDate.optional(),
             endAt: isoDate.optional(),
-            location: z.string().trim().max(500).optional(),
             remindAt: isoDate.optional(),
             dueAt: isoDate.optional(),
             isDone: z.boolean().optional(),

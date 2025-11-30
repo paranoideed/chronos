@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
-import {EventNotFoundError, ForbiddenError} from "./errors/errors.js";
-import {ReminderEvent, TaskEvent, ArrangementEvent} from "../repo/models/eventModel.js";
+import { EventNotFoundError, ForbiddenError } from "./errors/errors.js";
+import {
+    ReminderEvent,
+    TaskEvent,
+    ArrangementEvent,
+} from "../repo/models/eventModel.js";
 
 const asObjId = (id) => new mongoose.Types.ObjectId(id);
 
@@ -11,27 +15,30 @@ export default class EventCore {
         this.repo = repo;
     }
 
-    ensureRole (member, allowed) {
+    ensureRole(member, allowed) {
         if (!allowed.includes(member.role)) throw new ForbiddenError();
-    };
+    }
 
     pickTypeModel(type) {
-        if (type === "arrangement")  return ArrangementEvent;
+        if (type === "arrangement") return ArrangementEvent;
         if (type === "reminder") return ReminderEvent;
         if (type === "task") return TaskEvent;
         return this.repo.events();
-    };
+    }
 
     async ensureMember(calendarId, userId) {
-        const member = await this.repo.calendarMembers().findOne({
-            calendarId: asObjId(calendarId),
-            userId: asObjId(userId),
-            status: "accepted",
-        }).lean();
+        const member = await this.repo
+            .calendarMembers()
+            .findOne({
+                calendarId: asObjId(calendarId),
+                userId: asObjId(userId),
+                status: "accepted",
+            })
+            .lean();
         if (!member) throw new ForbiddenError();
 
         return member;
-    };
+    }
 
     async listEvents(
         userId,
@@ -63,7 +70,9 @@ export default class EventCore {
             filter.$expr = { $in: ["$__t", list] };
         }
 
-        const docs = await this.repo.events().find(filter)
+        const docs = await this.repo
+            .events()
+            .find(filter)
             .sort({ startAt: 1, remindAt: 1, dueAt: 1, createdAt: -1 })
             .skip((page - 1) * limit)
             .limit(limit)
@@ -77,33 +86,39 @@ export default class EventCore {
             limit,
             total,
         };
-    };
+    }
 
     async getEvent(userId, calendarId, eventId) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor", "viewer"]);
 
-        const doc = await this.repo.events().findOne({
-            _id: asObjId(eventId),
-            calendarId: asObjId(calendarId),
-        }).lean();
+        const doc = await this.repo
+            .events()
+            .findOne({
+                _id: asObjId(eventId),
+                calendarId: asObjId(calendarId),
+            })
+            .lean();
 
-        if (!doc) throw new Error("NOT_FOUND");
+        if (!doc) throw new EventNotFoundError("NOT_FOUND");
         return { ...doc, id: doc._id };
-    };
+    }
 
-    async createEvent(userId, calendarId, {
-        title,
-        description,
-        type,
-        allDay,
-        startAt,
-        endAt,
-        location,
-        remindAt,
-        dueAt,
-        isDone,
-    }) {
+    async createEvent(
+        userId,
+        calendarId,
+        {
+            title,
+            description,
+            type,
+            allDay,
+            startAt,
+            endAt,
+            remindAt,
+            dueAt,
+            isDone,
+        }
+    ) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor"]);
 
@@ -121,7 +136,6 @@ export default class EventCore {
                 allDay: !!allDay,
                 startAt: startAt,
                 endAt: endAt,
-                location: location,
             });
         } else if (type === "reminder") {
             Object.assign(payload, { remindAt: remindAt });
@@ -132,36 +146,76 @@ export default class EventCore {
         const doc = await Model.create(payload);
         const lean = doc.toJSON ? doc.toJSON() : doc;
         return { ...lean, id: lean.id ?? String(doc._id) };
-    };
+    }
 
-    async updateEvent(userId, calendarId, eventId, {
-        title,
-        description,
-        color,
-    }) {
+    async updateEvent(userId, calendarId, eventId, body) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor"]);
 
+        const existing = await this.repo
+            .events()
+            .findOne({
+                _id: asObjId(eventId),
+                calendarId: asObjId(calendarId),
+            })
+            .lean();
+
+        if (!existing) {
+            throw new EventNotFoundError();
+        }
+
+        const Model = this.pickTypeModel(existing.type);
+
+        const {
+            title,
+            description,
+            color,
+            allDay,
+            startAt,
+            endAt,
+            remindAt,
+            dueAt,
+            isDone,
+        } = body;
+
+        const update = {};
+
+        if (title !== undefined) update.title = title;
+        if (description !== undefined) update.description = description;
+        if (color !== undefined) update.color = color;
+
+        if (allDay !== undefined) update.allDay = allDay;
+        if (startAt !== undefined) update.startAt = startAt;
+        if (endAt !== undefined) update.endAt = endAt;
+        if (remindAt !== undefined) update.remindAt = remindAt;
+        if (dueAt !== undefined) update.dueAt = dueAt;
+        if (isDone !== undefined) update.isDone = isDone;
+
         const opts = { new: true, lean: true };
-        const doc = await this.repo.events().findOneAndUpdate(
+
+        const doc = await Model.findOneAndUpdate(
             { _id: asObjId(eventId), calendarId: asObjId(calendarId) },
-            { $set: { title, description, color } },
+            { $set: update },
             opts
         );
+
         if (!doc) throw new EventNotFoundError();
-        return { ...doc, id: doc._id };
-    };
+        return { ...doc, id: doc._id ?? String(doc._id) };
+    }
 
     async deleteEvent(userId, calendarId, eventId) {
         const member = await this.ensureMember(calendarId, userId);
         this.ensureRole(member, ["owner", "editor"]);
 
-        const res = await this.repo.events().findOneAndDelete({
-            _id: asObjId(eventId),
-            calendarId: asObjId(calendarId),
-        }).lean();
+        const res = await this.repo
+            .events()
+            .findOneAndDelete({
+                _id: asObjId(eventId),
+                calendarId: asObjId(calendarId),
+            })
+            .lean();
 
         if (!res) throw new EventNotFoundError();
         return true;
-    };
+    }
 }
