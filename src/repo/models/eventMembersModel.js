@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
 
-const eventAttendeeStatus = ['pending', 'accepted', 'declined'];
+const eventMemberStatus = ['pending', 'accepted', 'declined'];
 
 export const eventMembersSchema = new mongoose.Schema(
     {
         eventId: { type: mongoose.Schema.Types.ObjectId, ref: 'Events', required: true },
         userId: { type: mongoose.Schema.Types.ObjectId, ref: 'Users', required: true },
-        status: { type: String, enum: eventAttendeeStatus, required: true, default: 'pending' }
+        status: { type: String, enum: eventMemberStatus, required: true, default: 'pending' }
     },
     { timestamps: true }
 );
@@ -27,5 +27,8 @@ eventMembersSchema.set('toJSON', {
         delete ret._id;
     }
 });
+
+eventMembersSchema.index({ eventId: 1 });
+eventMembersSchema.index({ userId: 1 });
 
 export const eventMembersModel = mongoose.model('EventMembers', eventMembersSchema);

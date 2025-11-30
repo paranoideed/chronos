@@ -31,4 +31,7 @@ notificationSchema.set('toJSON', {
     }
 });
 
+notificationSchema.index({ userId: 1 });
+notificationSchema.index({ eventId: 1 });
+
 export const notificationModel = mongoose.model('Notifications', notificationSchema);

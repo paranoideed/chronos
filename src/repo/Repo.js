@@ -65,14 +65,14 @@ export class Repo {
      * @param {string} eventType
      * @returns {Model}
      */
-    eventAttendees(eventType) {
+    eventMembers(eventType) {
         return eventMembersModel;
     }
 
     /**
      * @returns {Model}
      */
-    notification() {
+    notifications() {
         return notificationModel;
     }
 }
