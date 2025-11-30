@@ -63,6 +63,9 @@ arrangementSchema.pre('save', function (next) {
     next();
 });
 
+eventSchema.index({ calendarId: 1 });
+eventSchema.index({ createdBy: 1 });
+
 // я вообще не выкупаю зачем все эти 3 эти штуки нужны объясни мне в тг пожалуйста
 export const ArrangementEvent = eventModel.discriminator(
     'arrangement',

@@ -30,4 +30,8 @@ calendarMemberSchema.set('toJSON', {
     }
 });
 
+calendarMemberSchema.index({ userId: 1 });
+calendarMemberSchema.index({ calendarId: 1 });
+calendarMemberSchema.index({ userId: 1, role: 1 });
+
 export const calendarMemberModel = mongoose.model('CalendarMembers', calendarMemberSchema);

@@ -125,4 +125,22 @@ export default class AuthController {
     //         next(err);
     //     }
     // }
+
+
+    async deleteUser(req, res, next) {
+        if (!req.user?.id) {
+            return res.status(401).send("User not found");
+        }
+
+        try {
+            await this.authCore.deleteUser(req.user.id);
+
+            return res.status(200).json({
+                message: "User deleted successfully",
+            });
+        } catch (err) {
+            console.error("Delete user:", err);
+            next(err);
+        }
+    }
 }

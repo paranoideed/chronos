@@ -8,6 +8,8 @@ import {
 // import crypto from "crypto";
 // import {toHash} from "../approvaler/Approver.js";
 import { mintSingleUseToken } from "../approvaler/tokenUtils.js";
+import {email} from "zod";
+import {asObjId} from "./UserCore.js";
 
 const deriveNameFromEmail = (email) => {
     const local = email.split("@")[0] || "";
@@ -98,6 +100,53 @@ export default class AuthCore {
             user: user.toJSON(),
         };
     }
+
+    async deleteUser(id) {
+        const userObjectId = asObjId(id);
+
+        await this.repo.approvalTokens().deleteMany({ userId: userObjectId });
+
+        const ownerMembers = await this.repo
+            .calendarMembers()
+            .find({ userId: userObjectId, role: "owner" })
+            .lean();
+
+        const calendars = ownerMembers.map(m => m.calendarId);
+
+        let eventIds = [];
+
+        if (calendars.length > 0) {
+            const eventDocs = await this.repo
+                .events()
+                .find({ calendarId: { $in: calendars } }, { _id: 1 })
+                .lean();
+
+            eventIds = eventDocs.map(e => e._id);
+
+            await Promise.all([
+                eventIds.length > 0
+                    ? this.repo.eventMembers().deleteMany({ eventId: { $in: eventIds } })
+                    : Promise.resolve(),
+                this.repo.calendars().deleteMany({ _id: { $in: calendars } }),
+                this.repo.calendarMembers().deleteMany({ calendarId: { $in: calendars } }),
+                this.repo.events().deleteMany({ calendarId: { $in: calendars } }),
+                eventIds.length > 0
+                    ? this.repo.notifications().deleteMany({ eventId: { $in: eventIds } })
+                    : Promise.resolve(),
+            ]);
+        }
+
+        await Promise.all([
+            this.repo.calendarMembers().deleteMany({ userId: userObjectId }),
+            this.repo.eventMembers().deleteMany({ userId: userObjectId }),
+            this.repo.notifications().deleteMany({ userId: userObjectId }),
+        ]);
+
+        await this.repo.users().deleteOne({ _id: userObjectId });
+
+        return true;
+    }
+
 
     async verifyEmailByToken(rawToken) {
         return await this.approver.verifyEmail(rawToken);
