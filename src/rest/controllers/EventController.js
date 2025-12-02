@@ -9,6 +9,7 @@ import {
     acceptEventInviteSchema,
     listSharedEventsSchema,
     removeEventMemberSchema,
+    listEventMembersSchema,
 } from "../requests/event.js";
 
 export default class EventController {
@@ -277,6 +278,37 @@ export default class EventController {
             return res.status(200).json(data);
         } catch (err) {
             console.error("Error in listSharedEvents:", err);
+            next(err);
+        }
+    }
+
+    async listEventMembers(req, res, next) {
+        const parsed = listEventMembersSchema.safeParse({
+            params: req.params,
+            query: req.query,
+            body: req.body,
+        });
+
+        if (!parsed.success) {
+            console.error(
+                "Validation error (listEventMembers):",
+                parsed.error.issues
+            );
+            return res.status(400).json(z.treeifyError(parsed.error));
+        }
+
+        const { params } = parsed.data;
+
+        try {
+            const members = await this.core.listEventMembers(
+                req.user.id,
+                params.calendarId,
+                params.id
+            );
+
+            return res.status(200).json({ members });
+        } catch (err) {
+            console.error("List event members error:", err);
             next(err);
         }
     }

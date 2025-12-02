@@ -159,6 +159,15 @@ export const eventMemberParamsSchema = z.object({
     userId: z.string().trim().min(1),
 });
 
+export const listEventMembersParamsSchema = z.object({
+    calendarId: z.string().trim().min(1),
+    id: z.string().trim().min(1),
+});
+
+export const listEventMembersSchema = z.object({
+    params: listEventMembersParamsSchema,
+});
+
 export const removeEventMemberSchema = z.object({
     params: eventMemberParamsSchema,
 });

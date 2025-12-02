@@ -568,6 +568,81 @@ export default class EventCore {
         };
     }
 
+    async listEventMembers(currentUserId, calendarId, eventId) {
+        const currentMember = await this.ensureMember(
+            calendarId,
+            currentUserId
+        );
+
+        const event = await this.repo
+            .events()
+            .findOne({
+                _id: asObjId(eventId),
+                calendarId: asObjId(calendarId),
+            })
+            .lean();
+
+        if (!event) {
+            throw new EventNotFoundError();
+        }
+
+        if (currentMember.role === "owner") {
+            const members = await this.repo
+                .eventMembers()
+                .find({ eventId: event._id })
+                .populate("userId")
+                .lean();
+
+            return members.map((m) => ({
+                status: m.status,
+                joinedAt: m.createdAt,
+                user: m.userId
+                    ? {
+                          id: String(m.userId._id),
+                          email: m.userId.email,
+                          name: m.userId.name,
+                          avatar: m.userId.avatar,
+                      }
+                    : null,
+            }));
+        }
+
+        const selfMember = await this.repo
+            .eventMembers()
+            .findOne({
+                eventId: event._id,
+                userId: asObjId(currentUserId),
+                status: { $in: ["pending", "accepted"] },
+            })
+            .lean();
+
+        if (!selfMember) {
+            throw new ForbiddenError("You are not a member of this event");
+        }
+
+        const members = await this.repo
+            .eventMembers()
+            .find({
+                eventId: event._id,
+                status: { $in: ["pending", "accepted"] },
+            })
+            .populate("userId")
+            .lean();
+
+        return members.map((m) => ({
+            status: m.status,
+            joinedAt: m.createdAt,
+            user: m.userId
+                ? {
+                      id: String(m.userId._id),
+                      email: m.userId.email,
+                      name: m.userId.name,
+                      avatar: m.userId.avatar,
+                  }
+                : null,
+        }));
+    }
+
     async removeEventMember(currentUserId, calendarId, eventId, targetUserId) {
         const member = await this.ensureMember(calendarId, currentUserId);
         this.ensureRole(member, ["owner"]);
@@ -600,7 +675,9 @@ export default class EventCore {
         });
 
         if (!result.deletedCount) {
-            throw new ForbiddenError("Event member not found or cannot be removed");
+            throw new ForbiddenError(
+                "Event member not found or cannot be removed"
+            );
         }
 
         return {

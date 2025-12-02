@@ -72,6 +72,14 @@ export default function eventRouter(eventController) {
         }
     );
 
+    router.get(
+        "/:calendarId/events/:id/members",
+        authMiddleware,
+        async (req, res, next) => {
+            await eventController.listEventMembers(req, res, next);
+        }
+    );
+
     router.delete(
         "/:calendarId/events/:id/members/:userId",
         authMiddleware,
