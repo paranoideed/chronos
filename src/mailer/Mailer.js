@@ -102,4 +102,69 @@ export default class Mailer {
             html,
         });
     }
+
+    async sendEventInvite(to, rawToken, { eventTitle, calendarName }) {
+        const ttl = Number(
+            process.env.EVENT_INVITE_TTL_MIN ||
+                process.env.CALENDAR_INVITE_TTL_MIN ||
+                10080 // 7 days
+        );
+
+        const baseUrl =
+            process.env.FRONTEND_BASE_URL ||
+            process.env.PUBLIC_BASE_URL ||
+            process.env.APP_BASE_URL;
+
+        const normalizedBase = (baseUrl || "").replace(/\/+$/, "");
+        const acceptUrl = `${normalizedBase}/event-invite/accept?token=${rawToken}`;
+        const declineUrl = `${normalizedBase}/event-invite/decline?token=${rawToken}`;
+
+        const html = `
+            <h2>Event invitation</h2>
+            <p>You have been invited to view the event <b>${eventTitle}</b>${
+            calendarName ? ` from calendar <b>${calendarName}</b>` : ""
+        }.</p>
+            
+            <p>Please choose one option:</p>
+
+            <p>
+                <a href="${acceptUrl}" 
+                style="
+                    display:inline-block;
+                    padding:10px 18px;
+                    background:#4caf50;
+                    color:#fff;
+                    text-decoration:none;
+                    border-radius:6px;
+                    font-weight:bold;
+                ">
+                Accept invitation
+                </a>
+            </p>
+
+            <p>
+                <a href="${declineUrl}" 
+                style="
+                    display:inline-block;
+                    padding:10px 18px;
+                    background:#d9534f;
+                    color:#fff;
+                    text-decoration:none;
+                    border-radius:6px;
+                    font-weight:bold;
+                ">
+                Decline invitation
+                </a>
+            </p>
+
+            <p>The links are valid for ${ttl} minutes.</p>
+        `;
+
+        await this.transporter.sendMail({
+            to,
+            from: this.from,
+            subject: "Event invitation",
+            html,
+        });
+    }
 }

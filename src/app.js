@@ -41,7 +41,7 @@ export default class App {
 
         this.core = {
             authCore: new AuthCore(this.repository, approver),
-            eventCore: new EventCore(this.repository),
+            eventCore: new EventCore(this.repository, approver),
             calendarCore: new CalendarCore(this.repository, approver),
             userCore: new UserCore(this.repository, S3Bucket),
         };

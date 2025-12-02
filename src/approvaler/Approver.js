@@ -84,6 +84,11 @@ export default class Approver {
         return rec;
     }
 
+    async approveEventInvite(rawToken) {
+        const rec = await this.useApprovalToken(rawToken, "event_invite");
+        return rec;
+    }
+
     async sendEmailVerification(to, rawToken) {
         return await this.mailer.sendEmailVerification(to, rawToken);
     }
@@ -92,6 +97,13 @@ export default class Approver {
         return await this.mailer.sendCalendarInvite(to, rawToken, {
             calendarName,
             role,
+        });
+    }
+
+    async sendEventInvite(to, rawToken, { eventTitle, calendarName }) {
+        return await this.mailer.sendEventInvite(to, rawToken, {
+            eventTitle,
+            calendarName,
         });
     }
 }

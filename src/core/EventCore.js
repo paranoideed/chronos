@@ -1,18 +1,26 @@
 import mongoose from "mongoose";
-import { EventNotFoundError, ForbiddenError } from "./errors/errors.js";
+import {
+    EventNotFoundError,
+    ForbiddenError,
+    CalendarNotFoundError,
+    UserNotFoundError,
+} from "./errors/errors.js";
 import {
     ReminderEvent,
     TaskEvent,
     ArrangementEvent,
 } from "../repo/models/eventModel.js";
+import { mintSingleUseToken } from "../approvaler/tokenUtils.js";
 
 const asObjId = (id) => new mongoose.Types.ObjectId(id);
 
 export default class EventCore {
     repo;
+    approver;
 
-    constructor(repo) {
+    constructor(repo, approver) {
         this.repo = repo;
+        this.approver = approver;
     }
 
     ensureRole(member, allowed) {
@@ -217,5 +225,300 @@ export default class EventCore {
 
         if (!res) throw new EventNotFoundError();
         return true;
+    }
+
+    // --- event sharing ---
+    async inviteMemberByEmail(currentUserId, calendarId, eventId, { email }) {
+        const member = await this.ensureMember(calendarId, currentUserId);
+        this.ensureRole(member, ["owner"]);
+
+        const normEmail = String(email).trim().toLowerCase();
+
+        const user = await this.repo
+            .users()
+            .findOne({ email: normEmail })
+            .collation({ locale: "en", strength: 2 });
+
+        if (!user) {
+            throw new UserNotFoundError("User with this email does not exist");
+        }
+
+        const calendar = await this.repo
+            .calendars()
+            .findById(calendarId)
+            .lean();
+
+        if (!calendar) {
+            throw new CalendarNotFoundError();
+        }
+
+        const event = await this.repo
+            .events()
+            .findOne({
+                _id: asObjId(eventId),
+                calendarId: asObjId(calendarId),
+            })
+            .lean();
+
+        if (!event) {
+            throw new EventNotFoundError();
+        }
+
+        const existingMember = await this.repo.eventMembers().findOne({
+            eventId: event._id,
+            userId: user._id,
+        });
+
+        if (existingMember) {
+            if (existingMember.status === "accepted") {
+                throw new ForbiddenError(
+                    "User is already a member of this event"
+                );
+            }
+
+            if (existingMember.status === "pending") {
+                throw new ForbiddenError(
+                    "User already has a pending invite to this event"
+                );
+            }
+
+            if (existingMember.status === "declined") {
+                // re-invite after decline
+                await this.repo
+                    .eventMembers()
+                    .updateOne(
+                        { _id: existingMember._id },
+                        { $set: { status: "pending" } }
+                    );
+            }
+        } else {
+            // invite new user
+            await this.repo.eventMembers().create({
+                eventId: event._id,
+                userId: user._id,
+                status: "pending",
+            });
+        }
+
+        const ttl = Number(
+            process.env.EVENT_INVITE_TTL_MIN ||
+                process.env.CALENDAR_INVITE_TTL_MIN ||
+                process.env.EMAIL_VERIFY_TTL_MIN ||
+                1440
+        );
+
+        const rawToken = await mintSingleUseToken({
+            repo: this.repo,
+            userId: user._id,
+            type: "event_invite",
+            ttlMinutes: ttl,
+            meta: {
+                eventId: event._id,
+                calendarId: calendar._id,
+            },
+        });
+
+        await this.approver.sendEventInvite(user.email, rawToken, {
+            eventTitle: event.title,
+            calendarName: calendar.name,
+        });
+
+        return {
+            email: user.email,
+            eventId: String(event._id),
+        };
+    }
+
+    async acceptEventInviteByToken(currentUserId, rawToken) {
+        const tokenRec = await this.approver.approveEventInvite(rawToken);
+        // tokenRec: { userId, type: 'event_invite', meta: { eventId, calendarId? }, ... }
+
+        if (String(tokenRec.userId) !== String(currentUserId)) {
+            throw new ForbiddenError("Token does not belong to this user");
+        }
+
+        const { eventId } = tokenRec.meta || {};
+
+        if (!eventId) {
+            throw new ForbiddenError("Invalid event invite token");
+        }
+
+        const event = await this.repo.events().findById(eventId).lean();
+
+        if (!event) {
+            throw new EventNotFoundError();
+        }
+
+        const member = await this.repo.eventMembers().findOne({
+            eventId: event._id,
+            userId: tokenRec.userId,
+        });
+
+        if (!member) {
+            throw new ForbiddenError("No pending invite found for this user");
+        }
+
+        await this.repo.eventMembers().updateOne(
+            { _id: member._id },
+            {
+                $set: {
+                    status: "accepted",
+                },
+            }
+        );
+
+        return {
+            event: {
+                id: String(event._id),
+                calendarId: String(event.calendarId),
+                title: event.title,
+                color: event.color,
+            },
+        };
+    }
+
+    async declineEventInviteByToken(currentUserId, rawToken) {
+        const tokenRec = await this.approver.approveEventInvite(rawToken);
+
+        if (String(tokenRec.userId) !== String(currentUserId)) {
+            throw new ForbiddenError("Token does not belong to this user");
+        }
+
+        const { eventId } = tokenRec.meta || {};
+
+        if (!eventId) {
+            throw new ForbiddenError("Invalid event invite token");
+        }
+
+        const event = await this.repo.events().findById(eventId).lean();
+
+        if (!event) {
+            throw new EventNotFoundError();
+        }
+
+        const member = await this.repo.eventMembers().findOne({
+            eventId: event._id,
+            userId: tokenRec.userId,
+        });
+
+        if (!member) {
+            throw new ForbiddenError("No pending invite found for this user");
+        }
+
+        if (member.status === "accepted") {
+            throw new ForbiddenError("Invite has already been accepted");
+        }
+
+        await this.repo.eventMembers().updateOne(
+            { _id: member._id },
+            {
+                $set: {
+                    status: "declined",
+                },
+            }
+        );
+
+        return {
+            success: true,
+        };
+    }
+
+    async listSharedEvents(userId, query = {}) {
+        const page = Number(query.page) > 0 ? Number(query.page) : 1;
+        const limit =
+            Number(query.limit) > 0 && Number(query.limit) <= 100
+                ? Number(query.limit)
+                : 20;
+
+        const { from, to, types } = query;
+
+        const memberships = await this.repo
+            .eventMembers()
+            .find({
+                userId: asObjId(userId),
+                status: "accepted",
+            })
+            .select("eventId")
+            .lean();
+
+        if (!memberships.length) {
+            return {
+                items: [],
+                page,
+                limit,
+                total: 0,
+            };
+        }
+
+        const eventIds = memberships.map((m) => m.eventId);
+
+        const filter = {
+            _id: { $in: eventIds },
+        };
+
+        // filter startAt / endAt / remindAt / dueAt
+        const dateRange = {};
+        if (from) {
+            const fromDate = new Date(from);
+            if (!Number.isNaN(fromDate.getTime())) {
+                dateRange.$gte = fromDate;
+            }
+        }
+        if (to) {
+            const toDate = new Date(to);
+            if (!Number.isNaN(toDate.getTime())) {
+                dateRange.$lte = toDate;
+            }
+        }
+
+        if (Object.keys(dateRange).length > 0) {
+            filter.$or = [
+                { startAt: dateRange },
+                { endAt: dateRange },
+                { remindAt: dateRange },
+                { dueAt: dateRange },
+            ];
+        }
+
+        // filter TaskEvent / ReminderEvent / ArrangementEvent
+        if (types) {
+            const list = String(types)
+                .split(",")
+                .map((t) => t.trim())
+                .filter(Boolean);
+
+            if (list.length) {
+                filter.$expr = { $in: ["$__t", list] };
+            }
+        }
+
+        const cursor = this.repo
+            .events()
+            .find(filter)
+            .sort({
+                startAt: 1,
+                remindAt: 1,
+                dueAt: 1,
+                createdAt: -1,
+            })
+            .skip((page - 1) * limit)
+            .limit(limit);
+
+        const docs = await cursor.lean();
+        const total = await this.repo.events().countDocuments(filter);
+
+        const items = docs.map((doc) => {
+            return {
+                ...doc,
+                id: String(doc._id),
+            };
+        });
+
+        return {
+            items,
+            page,
+            limit,
+            total,
+        };
     }
 }

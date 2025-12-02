@@ -5,6 +5,9 @@ import {
     getOneSchema,
     listEventsSchema,
     removeSchema,
+    inviteEventMemberSchema,
+    acceptEventInviteSchema,
+    listSharedEventsSchema,
 } from "../requests/event.js";
 
 export default class EventController {
@@ -136,7 +139,7 @@ export default class EventController {
             query: req.query,
             body: req.body,
         });
-        
+
         if (!parsed.success) {
             console.error("Validation error:", parsed.error.issues);
             return res.status(400).json(z.treeifyError(parsed.error));
@@ -153,6 +156,126 @@ export default class EventController {
             res.status(204).send();
         } catch (err) {
             console.error("Error in deleteEvent:", err);
+            next(err);
+        }
+    }
+
+    async inviteToEvent(req, res, next) {
+        const parsed = inviteEventMemberSchema.safeParse({
+            params: req.params,
+            query: req.query,
+            body: req.body,
+        });
+
+        if (!parsed.success) {
+            console.log("Invite to event validation error:", parsed.error);
+            return res.status(400).json(z.treeifyError(parsed.error));
+        }
+
+        const { params, body } = parsed.data;
+
+        try {
+            const result = await this.core.inviteMemberByEmail(
+                req.user.id,
+                params.calendarId,
+                params.id,
+                { email: body.email }
+            );
+
+            return res.status(201).json({
+                email: result.email,
+                eventId: result.eventId,
+            });
+        } catch (err) {
+            console.error("Invite to event error:", err);
+            next(err);
+        }
+    }
+
+    async acceptEventInvite(req, res, next) {
+        const parsed = acceptEventInviteSchema.safeParse({
+            params: req.params,
+            query: req.query,
+            body: req.body,
+        });
+
+        if (!parsed.success) {
+            console.log("Accept event invite validation error:", parsed.error);
+            return res.status(400).json(z.treeifyError(parsed.error));
+        }
+
+        const { query } = parsed.data;
+
+        try {
+            const data = await this.core.acceptEventInviteByToken(
+                req.user.id,
+                query.token
+            );
+
+            return res.status(200).json(data);
+        } catch (err) {
+            console.error("Accept event invite error:", err);
+            next(err);
+        }
+    }
+
+    async declineEventInvite(req, res, next) {
+        const parsed = acceptEventInviteSchema.safeParse({
+            params: req.params,
+            query: req.query,
+            body: req.body,
+        });
+
+        if (!parsed.success) {
+            console.log("Decline event invite validation error:", parsed.error);
+            return res.status(400).json(z.treeifyError(parsed.error));
+        }
+
+        const { query } = parsed.data;
+
+        try {
+            const data = await this.core.declineEventInviteByToken(
+                req.user.id,
+                query.token
+            );
+
+            return res.status(200).json(data);
+        } catch (err) {
+            console.error("Decline event invite error:", err);
+            next(err);
+        }
+    }
+
+    async listSharedEvents(req, res, next) {
+        const parsed = listSharedEventsSchema.safeParse({
+            params: req.params,
+            query: req.query,
+            body: req.body,
+        });
+
+        if (!parsed.success) {
+            console.error(
+                "Validation error (listSharedEvents):",
+                parsed.error.issues
+            );
+            return res.status(400).json(z.treeifyError(parsed.error));
+        }
+
+        const { query } = parsed.data;
+        const { from, to, types, page, limit } = query;
+
+        try {
+            const data = await this.core.listSharedEvents(req.user.id, {
+                from,
+                to,
+                types,
+                page,
+                limit,
+            });
+
+            return res.status(200).json(data);
+        } catch (err) {
+            console.error("Error in listSharedEvents:", err);
             next(err);
         }
     }

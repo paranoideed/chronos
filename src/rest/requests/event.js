@@ -16,7 +16,8 @@ export const createEventSchema = z.object({
     params: z.object({
         calendarId: z.string().trim().min(1),
     }),
-    body: z.object({
+    body: z
+        .object({
             type: z.enum(EVENT_TYPES),
             color: z.string().trim().max(50).optional(),
             allDay: z.boolean().optional(),
@@ -113,6 +114,36 @@ export const listEventsSchema = z.object({
     params: z.object({
         calendarId: z.string().trim().min(1),
     }),
+    query: z.object({
+        from: z.string().datetime().optional(),
+        to: z.string().datetime().optional(),
+        types: z.string().optional(),
+        page: z.coerce.number().int().min(1).default(1).optional(),
+        limit: z.coerce.number().int().min(1).max(100).default(20).optional(),
+    }),
+});
+
+export const inviteEventMemberBodySchema = z.object({
+    email: z.string().email().max(255),
+});
+
+export const acceptEventInviteQuerySchema = z.object({
+    token: z.string().min(1, "Token is required"),
+});
+
+export const inviteEventMemberSchema = z.object({
+    params: z.object({
+        calendarId: z.string().trim().min(1),
+        id: z.string().trim().min(1),
+    }),
+    body: inviteEventMemberBodySchema,
+});
+
+export const acceptEventInviteSchema = z.object({
+    query: acceptEventInviteQuerySchema,
+});
+
+export const listSharedEventsSchema = z.object({
     query: z.object({
         from: z.string().datetime().optional(),
         to: z.string().datetime().optional(),

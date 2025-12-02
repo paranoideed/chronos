@@ -33,10 +33,42 @@ export default function eventRouter(eventController) {
         }
     );
 
+    router.post(
+        "/:calendarId/events/:id/invite",
+        authMiddleware,
+        async (req, res, next) => {
+            await eventController.inviteToEvent(req, res, next);
+        }
+    );
+
     router.delete("/:calendarId/events/:id",
         authMiddleware,
         async (req, res, next) => {
             await eventController.deleteEvent(req, res, next)
+        }
+    );
+
+    router.get(
+        "/events/accept-invite",
+        authMiddleware,
+        async (req, res, next) => {
+            await eventController.acceptEventInvite(req, res, next);
+        }
+    );
+
+    router.get(
+        "/events/decline-invite",
+        authMiddleware,
+        async (req, res, next) => {
+            await eventController.declineEventInvite(req, res, next);
+        }
+    );
+
+    router.get(
+        "/events/shared",
+        authMiddleware,
+        async (req, res, next) => {
+            await eventController.listSharedEvents(req, res, next);
         }
     );
 
