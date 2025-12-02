@@ -358,7 +358,7 @@ export default class EventCore {
                 calendarId: calendar._id,
             },
         });
-        
+
         const inviter = await this.repo
             .users()
             .findById(asObjId(currentUserId))
@@ -569,11 +569,6 @@ export default class EventCore {
     }
 
     async listEventMembers(currentUserId, calendarId, eventId) {
-        const currentMember = await this.ensureMember(
-            calendarId,
-            currentUserId
-        );
-
         const event = await this.repo
             .events()
             .findOne({
@@ -586,7 +581,15 @@ export default class EventCore {
             throw new EventNotFoundError();
         }
 
-        if (currentMember.role === "owner") {
+        const calendarMember = await this.repo
+            .calendarMembers()
+            .findOne({
+                calendarId: asObjId(calendarId),
+                userId: asObjId(currentUserId),
+            })
+            .lean();
+
+        if (calendarMember?.role === "owner") {
             const members = await this.repo
                 .eventMembers()
                 .find({ eventId: event._id })
@@ -616,7 +619,7 @@ export default class EventCore {
             })
             .lean();
 
-        if (!selfMember) {
+        if (!calendarMember && !selfMember) {
             throw new ForbiddenError("You are not a member of this event");
         }
 
