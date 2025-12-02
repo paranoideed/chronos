@@ -72,5 +72,13 @@ export default function eventRouter(eventController) {
         }
     );
 
+    router.delete(
+        "/:calendarId/events/:id/members/:userId",
+        authMiddleware,
+        async (req, res, next) => {
+            await eventController.removeEventMember(req, res, next);
+        }
+    );
+
     return router;
 }

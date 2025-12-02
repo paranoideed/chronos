@@ -100,10 +100,10 @@ export default class Approver {
         });
     }
 
-    async sendEventInvite(to, rawToken, { eventTitle, calendarName }) {
+    async sendEventInvite(to, rawToken, { eventTitle, invitedBy }) {
         return await this.mailer.sendEventInvite(to, rawToken, {
             eventTitle,
-            calendarName,
+            invitedBy,
         });
     }
 }

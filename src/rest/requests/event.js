@@ -152,3 +152,13 @@ export const listSharedEventsSchema = z.object({
         limit: z.coerce.number().int().min(1).max(100).default(20).optional(),
     }),
 });
+
+export const eventMemberParamsSchema = z.object({
+    calendarId: z.string().trim().min(1),
+    id: z.string().trim().min(1),
+    userId: z.string().trim().min(1),
+});
+
+export const removeEventMemberSchema = z.object({
+    params: eventMemberParamsSchema,
+});

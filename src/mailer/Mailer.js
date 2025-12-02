@@ -103,7 +103,7 @@ export default class Mailer {
         });
     }
 
-    async sendEventInvite(to, rawToken, { eventTitle, calendarName }) {
+    async sendEventInvite(to, rawToken, { eventTitle, invitedBy }) {
         const ttl = Number(
             process.env.EVENT_INVITE_TTL_MIN ||
                 process.env.CALENDAR_INVITE_TTL_MIN ||
@@ -121,9 +121,8 @@ export default class Mailer {
 
         const html = `
             <h2>Event invitation</h2>
-            <p>You have been invited to view the event <b>${eventTitle}</b>${
-            calendarName ? ` from calendar <b>${calendarName}</b>` : ""
-        }.</p>
+            <p>You have been invited to view the event <b>${eventTitle}</b>.</p>
+            <p>Invitation sent by <b>${invitedBy}</b>.</p>
             
             <p>Please choose one option:</p>
 

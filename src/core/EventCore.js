@@ -112,6 +112,47 @@ export default class EventCore {
         return { ...doc, id: doc._id };
     }
 
+    async getEvent(userId, calendarId, eventId) {
+        const doc = await this.repo
+            .events()
+            .findOne({
+                _id: asObjId(eventId),
+                calendarId: asObjId(calendarId),
+            })
+            .lean();
+
+        if (!doc) throw new EventNotFoundError("NOT_FOUND");
+
+        let member = null;
+        try {
+            member = await this.ensureMember(calendarId, userId);
+        } catch (err) {
+            if (!(err instanceof ForbiddenError)) {
+                throw err;
+            }
+        }
+
+        if (member) {
+            this.ensureRole(member, ["owner", "editor", "viewer"]);
+            return { ...doc, id: doc._id };
+        }
+
+        const eventMember = await this.repo
+            .eventMembers()
+            .findOne({
+                eventId: doc._id,
+                userId: asObjId(userId),
+                status: "accepted",
+            })
+            .lean();
+
+        if (!eventMember) {
+            throw new ForbiddenError();
+        }
+
+        return { ...doc, id: doc._id };
+    }
+
     async createEvent(
         userId,
         calendarId,
@@ -317,10 +358,15 @@ export default class EventCore {
                 calendarId: calendar._id,
             },
         });
+        
+        const inviter = await this.repo
+            .users()
+            .findById(asObjId(currentUserId))
+            .lean();
 
         await this.approver.sendEventInvite(user.email, rawToken, {
             eventTitle: event.title,
-            calendarName: calendar.name,
+            invitedBy: inviter.email,
         });
 
         return {
@@ -519,6 +565,46 @@ export default class EventCore {
             page,
             limit,
             total,
+        };
+    }
+
+    async removeEventMember(currentUserId, calendarId, eventId, targetUserId) {
+        const member = await this.ensureMember(calendarId, currentUserId);
+        this.ensureRole(member, ["owner"]);
+
+        const event = await this.repo
+            .events()
+            .findOne({
+                _id: asObjId(eventId),
+                calendarId: asObjId(calendarId),
+            })
+            .lean();
+
+        if (!event) {
+            throw new EventNotFoundError();
+        }
+
+        const targetUser = await this.repo
+            .users()
+            .findById(asObjId(targetUserId))
+            .lean();
+
+        if (!targetUser) {
+            throw new UserNotFoundError("User not found");
+        }
+
+        const result = await this.repo.eventMembers().deleteOne({
+            eventId: event._id,
+            userId: targetUser._id,
+            status: { $in: ["pending", "accepted"] },
+        });
+
+        if (!result.deletedCount) {
+            throw new ForbiddenError("Event member not found or cannot be removed");
+        }
+
+        return {
+            success: true,
         };
     }
 }
