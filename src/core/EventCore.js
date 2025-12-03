@@ -647,8 +647,11 @@ export default class EventCore {
     }
 
     async removeEventMember(currentUserId, calendarId, eventId, targetUserId) {
-        const member = await this.ensureMember(calendarId, currentUserId);
-        this.ensureRole(member, ["owner"]);
+        const isSelfRemoval = currentUserId === targetUserId;
+        if (!isSelfRemoval) {
+            const member = await this.ensureMember(calendarId, currentUserId);
+            this.ensureRole(member, ["owner"]);
+        }
 
         const event = await this.repo
             .events()
