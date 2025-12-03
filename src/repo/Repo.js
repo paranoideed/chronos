@@ -5,7 +5,6 @@ import {calendarModel} from "./models/calendarModel.js";
 import {calendarMemberModel} from "./models/calendarMemberModel.js";
 import {eventModel} from "./models/eventModel.js";
 import {eventMembersModel} from "./models/eventMembersModel.js";
-import {notificationModel} from "./models/notificationModel.js";
 
 export class Repo {
     uri;
@@ -67,12 +66,5 @@ export class Repo {
      */
     eventMembers(eventType) {
         return eventMembersModel;
-    }
-
-    /**
-     * @returns {Model}
-     */
-    notifications() {
-        return notificationModel;
     }
 }

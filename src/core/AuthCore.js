@@ -95,6 +95,11 @@ export default class AuthCore {
             throw new InvalidCredentialsError();
         }
 
+        if (!user.secret.emailVerified) {
+            throw new Error("EMAIL_NOT_VERIFIED");
+
+        }
+
         return {
             token: generateToken(user.id),
             user: user.toJSON(),
@@ -130,16 +135,12 @@ export default class AuthCore {
                 this.repo.calendars().deleteMany({ _id: { $in: calendars } }),
                 this.repo.calendarMembers().deleteMany({ calendarId: { $in: calendars } }),
                 this.repo.events().deleteMany({ calendarId: { $in: calendars } }),
-                eventIds.length > 0
-                    ? this.repo.notifications().deleteMany({ eventId: { $in: eventIds } })
-                    : Promise.resolve(),
             ]);
         }
 
         await Promise.all([
             this.repo.calendarMembers().deleteMany({ userId: userObjectId }),
             this.repo.eventMembers().deleteMany({ userId: userObjectId }),
-            this.repo.notifications().deleteMany({ userId: userObjectId }),
         ]);
 
         await this.repo.users().deleteOne({ _id: userObjectId });
